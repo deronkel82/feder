@@ -1864,3 +1864,26 @@ small,
   max-height: 85dvh;
   overflow-y: auto;
 }
+
+.entity-scan-controls {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.entity-scan-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--input);
+  border-radius: 6px;
+  background: var(--card);
+  font-size: 13px;
+  justify-self: start;
+}
+.entity-scan-controls output {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.5;
+}

@@ -713,6 +713,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       e.sceneIds.includes(s.id),
                     )}
                     error={recognition.error}
+                    scanning={recognition.scanning}
+                    checkedAt={recognition.checkedAt}
+                    rescan={recognition.rescan}
                     project={p}
                     update={update}
                   />

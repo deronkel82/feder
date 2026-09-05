@@ -39,6 +39,12 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.2.3
+
+„Erneut erkennen“ im Bereich „Im Text entdeckt“ prüft das aktuelle Buch auch ohne neue Texteingabe. Prüfstatus und Uhrzeit machen den Abschluss sichtbar. Automatische Prüfungen laufen weiterhin nach Texteingaben; veraltete Worker-Ergebnisse werden verworfen.
+
+Die lokalen Erkennungsregeln nutzen vollständige Wortgrenzen (kein falsches „in“ aus „kein“), schließen gewöhnliche Nomen und Artikelkonstruktionen aus und erkennen Namensangaben wie „Großmutter Anna“, „namens Élodie“ und „Stadt Nebelhain“. Explizite Namensangaben haben Vorrang vor schwachen Ortsvermutungen. Bereits angelegte Karten bleiben erhalten; verworfene Vorschläge bleiben ausgeblendet, bis sie über den separaten Knopf zurückgesetzt werden. Die Erkennung bleibt regelbasiert und kann Namen übersehen.
+
 ## Neu in 0.2.2
 
 - Dark Mode wird auf diesem Gerät gespeichert und beim nächsten Öffnen wiederhergestellt.

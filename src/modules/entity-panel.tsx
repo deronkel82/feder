@@ -1,45 +1,88 @@
 import { useEffect, useState, useRef } from 'react';
 import { uid, type Project } from '../core/model';
 import type { Entity } from './entities';
+import { RefreshCw } from 'lucide-react';
 export function useEntities(project: Project) {
+  const [request, setRequest] = useState(0);
   const [result, setResult] = useState<{
-    projectId: string;
+    project: Project | null;
+    request: number;
     entities: Entity[];
-  }>({ projectId: '', entities: [] });
-  const [error, setError] = useState('');
+    error: string;
+    checkedAt: string;
+  }>({ project: null, request: -1, entities: [], error: '', checkedAt: '' });
   const seq = useRef(0);
+  const lastManualRequest = useRef(0);
   useEffect(() => {
     const id = ++seq.current;
+    let cancelled = false;
+    const manual = request !== lastManualRequest.current;
+    lastManualRequest.current = request;
     let worker: Worker | undefined;
-    const timer = setTimeout(() => {
-      try {
-        worker = new Worker(new URL('./entities.worker.ts', import.meta.url), {
-          type: 'module',
-        });
-        worker.onmessage = (e) => {
-          if (e.data.id === seq.current) {
-            setResult({ projectId: project.id, entities: e.data.result });
-            setError('');
-          }
-          worker?.terminate();
-        };
-        worker.onerror = () => {
-          setError('Erkennung derzeit nicht verfügbar.');
-          worker?.terminate();
-        };
-        worker.postMessage({ id, project });
-      } catch {
-        setError('Erkennung derzeit nicht verfügbar.');
-      }
-    }, 700);
-    return () => {
-      clearTimeout(timer);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const finish = (entities: Entity[], error = '') => {
+      if (cancelled || id !== seq.current) return;
+      setResult({
+        project,
+        request,
+        entities,
+        error,
+        checkedAt: new Date().toLocaleTimeString('de', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+      });
+      clearTimeout(timeout);
       worker?.terminate();
     };
-  }, [project]);
+    const timer = setTimeout(
+      () => {
+        try {
+          worker = new Worker(
+            new URL('./entities.worker.ts', import.meta.url),
+            { type: 'module' },
+          );
+          timeout = setTimeout(
+            () =>
+              finish(
+                [],
+                'Die Erkennung dauert zu lange. Bitte erneut versuchen.',
+              ),
+            20000,
+          );
+          worker.onmessage = (e) => {
+            if (e.data.id === id) finish(e.data.result);
+          };
+          worker.onerror = () =>
+            finish(
+              [],
+              'Erkennung derzeit nicht verfügbar. Bitte erneut versuchen.',
+            );
+          worker.postMessage({ id, project });
+        } catch {
+          finish(
+            [],
+            'Erkennung derzeit nicht verfügbar. Bitte erneut versuchen.',
+          );
+        }
+      },
+      manual ? 0 : 700,
+    );
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      clearTimeout(timeout);
+      worker?.terminate();
+    };
+  }, [project, request]);
+  const sameProject = result.project?.id === project.id;
   return {
-    entities: result.projectId === project.id ? result.entities : [],
-    error,
+    entities: sameProject ? result.entities : [],
+    error: sameProject ? result.error : '',
+    scanning: result.project !== project || result.request !== request,
+    checkedAt: sameProject ? result.checkedAt : '',
+    rescan: () => setRequest((n) => n + 1),
   };
 }
 function acceptEntity(p: Project, e: Entity, kind: Entity['kind']): Project {
@@ -72,11 +115,17 @@ function acceptEntity(p: Project, e: Entity, kind: Entity['kind']): Project {
 export function EntityPanel({
   entities,
   error,
+  scanning,
+  checkedAt,
+  rescan,
   project,
   update,
 }: {
   entities: Entity[];
   error: string;
+  scanning: boolean;
+  checkedAt: string;
+  rescan: () => void;
   project: Project;
   update: (f: (p: Project) => Project) => void;
 }) {
@@ -87,8 +136,18 @@ export function EntityPanel({
         Automatische lokale Hinweise auf Figuren und Orte. Bitte prüfe die
         Zuordnung; die Erkennung kann Namen übersehen oder Nomen verwechseln.
       </p>
-      {error && <p>{error}</p>}
-      {!entities.length && !error && (
+      <div className="entity-scan-controls">
+        <button onClick={rescan} disabled={scanning}>
+          <RefreshCw size={15} />
+          {scanning ? 'Wird geprüft …' : 'Erneut erkennen'}
+        </button>
+        <output>
+          {scanning
+            ? 'Das aktuelle Buch wird lokal geprüft.'
+            : error || (checkedAt ? 'Zuletzt geprüft: ' + checkedAt : '')}
+        </output>
+      </div>
+      {!entities.length && !error && !scanning && (
         <p className="muted small">
           Noch keine Namen erkannt. Vorschläge erscheinen automatisch beim
           Schreiben oder Textimport.
