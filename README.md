@@ -39,6 +39,10 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.4.2
+
+In „Projekte & Export“ das gewünschte Projekt auswählen und „Aktuelles Projekt löschen“ drücken. Nach Bestätigung wird es aus der Projektliste entfernt und vorher vollständig als Version gesichert. „Gelöschte Projekte“ stellt es samt vorhandenen Versionen wieder her. Es handelt sich um wiederherstellbares Löschen; die Daten bleiben lokal und in kompletten JSON-Sicherungen enthalten. Auch deren Import erhält gelöschte Projekte. Nach Löschen des letzten Projekts bleibt ein neues leeres Projekt, ohne Demo-Inhalte.
+
 ## Neu in 0.4.0
 
 - Beim Anlegen: Roman (50.000 Wörter), Novelle/Erzählung (20.000) oder Kurzgeschichte (2.500) wählen. Dies sind frei änderbare Startwerte, keine literarischen Definitionen. Bestehende Projekte bleiben Romane mit Szenen; ihre Wortziele werden nicht verändert.

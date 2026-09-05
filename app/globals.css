@@ -2051,3 +2051,47 @@ small,
     gap: 2px;
   }
 }
+
+.project-delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--destructive);
+  border: 1px solid var(--input);
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.deleted-projects {
+  padding: 14px 0;
+  border-block: 1px solid var(--border);
+}
+.deleted-projects summary {
+  cursor: pointer;
+  font-size: 14px;
+}
+.deleted-projects > p {
+  margin: 12px 0;
+}
+.deleted-project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+.deleted-project-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.deleted-project-row small {
+  display: block;
+  color: var(--muted-foreground);
+}
+.deleted-project-row button {
+  font-size: 12px;
+  border: 1px solid var(--input);
+  border-radius: 5px;
+  padding: 8px;
+}

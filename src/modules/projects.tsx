@@ -1,4 +1,9 @@
 import {
+  deleteProject,
+  deletedProjects,
+  restoreDeletedProject,
+} from '../core/project-deletion';
+import {
   FormatFields,
   ProjectModeSettings,
   LimitFields,
@@ -13,7 +18,7 @@ import {
 } from '../core/project-format';
 import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
-import { Plus, Download, Upload, BookOpen } from 'lucide-react';
+import { Plus, Download, Upload, BookOpen, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -56,6 +61,9 @@ export function ProjectDialog({
 }) {
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deleting = library.projects.find((p) => p.id === deleteId);
+  const deleted = deletedProjects(library);
   const [draft, setDraft] = useState(() => newProject(''));
   const [recoveries, setRecoveries] = useState<
     Awaited<ReturnType<typeof recoveryBackups>>
@@ -78,18 +86,23 @@ export function ProjectDialog({
         select(p.scenes[0].id);
       } else {
         const imported = validateLibrary(JSON.parse(text));
-        const ids = new Map(imported.projects.map((p) => [p.id, uid()]));
+        const ids = new Map(
+          [
+            ...new Set([
+              ...imported.projects.map((p) => p.id),
+              ...imported.snapshots.map((s) => s.project.id),
+            ]),
+          ].map((id) => [id, uid()]),
+        );
         const projects = imported.projects.map((p) => ({
           ...p,
           id: ids.get(p.id)!,
         }));
-        const snapshots = imported.snapshots
-          .filter((s) => ids.has(s.project.id))
-          .map((s) => ({
-            ...s,
-            id: uid(),
-            project: { ...s.project, id: ids.get(s.project.id)! },
-          }));
+        const snapshots = imported.snapshots.map((s) => ({
+          ...s,
+          id: uid(),
+          project: { ...s.project, id: ids.get(s.project.id)! },
+        }));
         setLibrary((l) => ({
           ...l,
           projects: [...l.projects, ...projects],
@@ -161,6 +174,82 @@ export function ProjectDialog({
             </button>
           ))}
         </div>
+        <button
+          className="project-delete-button"
+          disabled={!!error}
+          onClick={() => setDeleteId(project.id)}
+        >
+          <Trash2 size={16} />
+          Aktuelles Projekt löschen
+        </button>
+        {deleted.length > 0 && (
+          <details className="deleted-projects">
+            <summary>Gelöschte Projekte ({deleted.length})</summary>
+            <p className="muted small">
+              Diese Projekte sind aus der Projektliste entfernt. Ihre Inhalte
+              und Versionen bleiben zur Wiederherstellung lokal gespeichert und
+              sind in der kompletten JSON-Sicherung enthalten.
+            </p>
+            {deleted.map((v) => (
+              <div className="deleted-project-row" key={v.project.id}>
+                <span>
+                  <strong>{v.project.title}</strong>
+                  <small>{new Date(v.date).toLocaleString('de')}</small>
+                </span>
+                <button
+                  type="button"
+                  disabled={!!error}
+                  onClick={() => {
+                    const next = restoreDeletedProject(library, v.project.id);
+                    setLibrary(next);
+                    select(v.project.scenes[0].id);
+                    setMessage(
+                      'Projekt mit seinen Versionen wiederhergestellt.',
+                    );
+                  }}
+                >
+                  Wiederherstellen
+                </button>
+              </div>
+            ))}
+          </details>
+        )}
+        <Dialog open={!!deleting} onOpenChange={(o) => !o && setDeleteId(null)}>
+          <DialogContent>
+            <DialogTitle>Projekt „{deleting?.title}“ löschen?</DialogTitle>
+            <DialogDescription>
+              Das Projekt wird aus deiner Projektliste entfernt. Vorher wird
+              sein vollständiger Stand gesichert. Über „Gelöschte Projekte“
+              kannst du es samt Versionen wiederherstellen.
+              {library.projects.length === 1
+                ? ' Nach dem Löschen bleibt ein neues leeres Projekt zum Weiterschreiben.'
+                : ''}
+            </DialogDescription>
+            <div className="form-actions">
+              <button
+                className="project-delete-button"
+                disabled={!!error}
+                onClick={() => {
+                  if (!deleting) return;
+                  const next = deleteProject(library, deleting.id);
+                  setLibrary(next);
+                  select(
+                    next.projects.find((p) => p.id === next.active)!.scenes[0]
+                      .id,
+                  );
+                  setDeleteId(null);
+                  setCreating(false);
+                  setMessage(
+                    'Projekt gelöscht. Unter „Gelöschte Projekte“ kannst du es wiederherstellen.',
+                  );
+                }}
+              >
+                Projekt löschen
+              </button>
+              <button onClick={() => setDeleteId(null)}>Abbrechen</button>
+            </div>
+          </DialogContent>
+        </Dialog>
         <button className="text-button" onClick={() => setCreating(true)}>
           <Plus size={16} />
           Neues Projekt
