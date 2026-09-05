@@ -1,12 +1,18 @@
+import { chapterDetails, orderedScenes, type ChapterMeta } from './chapters.ts';
 import { moveScene, newScene, type Scene, type Library } from './model.ts';
 import { withSnapshot } from './history.ts';
 export type StructureAction =
-  | { type: 'move' | 'promote'; sceneId: string; chapter: string }
-  | { type: 'rename'; chapter: string; name: string }
+  | {
+      type: 'move' | 'promote';
+      sceneId: string;
+      chapter: string;
+      meta?: ChapterMeta;
+    }
+  | { type: 'rename'; chapter: string; name: string; meta?: ChapterMeta }
   | { type: 'collapse'; chapter: string; target: string }
   | { type: 'deleteScene'; sceneId: string }
   | { type: 'deleteChapter'; chapter: string }
-  | { type: 'newChapter'; chapter: string };
+  | { type: 'newChapter'; chapter: string; meta?: ChapterMeta };
 export function groupScenes(scenes: Scene[]) {
   const chapters = [...new Set(scenes.map((s) => s.chapter))];
   return chapters.flatMap((c) => scenes.filter((s) => s.chapter === c));
@@ -30,7 +36,10 @@ export function changeStructure(
   action: StructureAction,
 ): Library {
   const project = library.projects.find((p) => p.id === library.active)!;
-  let scenes = groupScenes(project.scenes);
+  let scenes = orderedScenes(project);
+  let chapterMeta = [...new Set(scenes.map((s) => s.chapter))].map((name) =>
+    chapterDetails(project, name),
+  );
   const chapters = new Set(scenes.map((s) => s.chapter));
   const required = (name: string) => {
     if (!name.trim()) throw Error('Bitte einen Kapitelnamen eingeben.');
@@ -58,11 +67,13 @@ export function changeStructure(
     } else scenes = appendToChapter(rest, moved);
   } else if (action.type === 'rename') {
     const name = required(action.name);
-    if (name === action.chapter) return library;
-    if (chapters.has(name))
+    if (name !== action.chapter && chapters.has(name))
       throw Error('Dieser Kapitelname existiert bereits.');
     scenes = scenes.map((s) =>
       s.chapter === action.chapter ? { ...s, chapter: name } : s,
+    );
+    chapterMeta = chapterMeta.map((c) =>
+      c.name === action.chapter ? { ...(action.meta || c), name } : c,
     );
   } else if (action.type === 'collapse') {
     const target = required(action.target);
@@ -107,7 +118,22 @@ export function changeStructure(
       throw Error('Dieser Kapitelname existiert bereits.');
     scenes.push(newScene(chapter));
   }
+  if ('meta' in action && action.meta && action.type !== 'rename') {
+    const name =
+      action.type === 'promote' || action.type === 'newChapter'
+        ? action.chapter
+        : '';
+    if (name) chapterMeta.push({ ...action.meta, name: name.trim() });
+  }
   if (!scenes.length) scenes = [newScene()];
+  chapterMeta = chapterMeta
+    .filter((c) => scenes.some((s) => s.chapter === c.name))
+    .map((c) => ({
+      ...c,
+      part: c.kind === 'chapter' ? c.part.trim() : '',
+      number: c.kind === 'chapter' ? c.number.trim() : '',
+    }));
+  scenes = orderedScenes({ ...project, chapterMeta, scenes });
   const deleting =
     action.type === 'deleteScene' || action.type === 'deleteChapter';
   const next = withSnapshot(
@@ -122,7 +148,7 @@ export function changeStructure(
     ...next,
     projects: next.projects.map((p) =>
       p.id === project.id
-        ? { ...p, scenes, updated: new Date().toISOString() }
+        ? { ...p, scenes, chapterMeta, updated: new Date().toISOString() }
         : p,
     ),
   };

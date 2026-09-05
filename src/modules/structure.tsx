@@ -1,3 +1,5 @@
+import { chapterDetails } from '../core/chapters';
+import { ChapterFields } from './chapter-fields';
 import { useState } from 'react';
 import {
   Dialog,
@@ -33,6 +35,24 @@ export function StructureDialog({
         : 'rename',
   );
   const [name, setName] = useState(selection.kind === 'chapter' ? chapter : '');
+  const [meta, setMeta] = useState(() =>
+    selection.kind === 'chapter'
+      ? chapterDetails(project, chapter)
+      : {
+          name: '',
+          kind: 'chapter' as const,
+          number: String(
+            new Set(
+              project.scenes
+                .filter(
+                  (s) => chapterDetails(project, s.chapter).kind === 'chapter',
+                )
+                .map((s) => s.chapter),
+            ).size + 1,
+          ),
+          part: '',
+        },
+  );
   const others = [...new Set(project.scenes.map((s) => s.chapter))].filter(
     (c) => c !== chapter,
   );
@@ -63,16 +83,17 @@ export function StructureDialog({
                   type: action,
                   sceneId: scene.id,
                   chapter: action === 'move' ? target : name,
+                  meta: action === 'promote' ? meta : undefined,
                 };
               else if (action === 'rename')
-                a = { type: 'rename', chapter, name };
+                a = { type: 'rename', chapter, name, meta };
               else if (action === 'collapse')
                 a = { type: 'collapse', chapter, target };
               else if (action === 'deleteScene')
                 a = { type: 'deleteScene', sceneId: scene.id };
               else if (action === 'deleteChapter')
                 a = { type: 'deleteChapter', chapter };
-              else a = { type: 'newChapter', chapter: name };
+              else a = { type: 'newChapter', chapter: name, meta };
               apply(a);
               close();
             } catch (e) {
@@ -105,7 +126,9 @@ export function StructureDialog({
                 </option>
               ) : (
                 <>
-                  <option value="rename">Kapitel umbenennen</option>
+                  <option value="rename">
+                    Kapitel, Nummer und Teil bearbeiten
+                  </option>
                   <option value="collapse">
                     Kapitel in eine Szene umwandeln
                   </option>
@@ -128,6 +151,21 @@ export function StructureDialog({
                 placeholder="Name des Kapitels"
               />
             </label>
+          )}
+          {(action === 'rename' ||
+            action === 'promote' ||
+            action === 'newChapter') && (
+            <ChapterFields
+              value={meta}
+              change={setMeta}
+              parts={[
+                ...new Set(
+                  (project.chapterMeta || [])
+                    .map((c) => c.part)
+                    .filter(Boolean),
+                ),
+              ]}
+            />
           )}
           {(action === 'move' || action === 'collapse') && (
             <label className="field-label">

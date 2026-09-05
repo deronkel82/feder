@@ -39,6 +39,14 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.3.0
+
+- Die Werkzeugnavigation lässt sich über „Werkzeuge / Einklappen“ reduzieren. Teile und Kapitel sind einzeln einklappbar; der Zustand bleibt auf diesem Gerät gespeichert. Die Suche findet auch Szenenzusammenfassungen und zeigt Treffer in eingeklappten Bereichen.
+- Über das Kapitelmenü lassen sich Kapitelart, Nummer (z. B. 3 oder III) und ein frei benannter Teil/Akt einstellen. Gleiche Gruppennamen fassen Kapitel zusammen. Prolog und Epilog sind unnummeriert und stehen vor bzw. nach den regulären Teilen. Die Gruppierung bestimmt auch die Manuskriptreihenfolge; Nummern sind frei vergebene Beschriftungen und sortieren nicht automatisch.
+- Nummern und Gruppen erscheinen auch in Markdown, EPUB und Druck/PDF. Kapitelangaben und Ideenverknüpfungen sind optionale Erweiterungen des V2-Datenschemas und bleiben in JSON-Sicherungen und Versionen enthalten. Bestehende Bücher benötigen keine Datenumstellung.
+- Ideenkarte öffnen → „Ins Manuskript übernehmen“ → als neue Szene in ein bestehendes Kapitel oder als neues Kapitel übernehmen. Kurzbeschreibung und Notizen bilden die Zusammenfassung; der Manuskripttext bleibt leer und die Szene erhält den Status „Idee“. Die Zusammenfassung steht direkt am Schreibfeld zur weiteren Planung bereit.
+- Die Karte wird mit der Szene verknüpft und auf „Im Manuskript“ gesetzt. Wiederholtes Übernehmen öffnet die vorhandene Szene. Der Status allein bleibt eine organisatorische Markierung; Änderungen an Karte und Szene werden nach der Übernahme nicht synchronisiert. Gelöschte Szenen können durch erneute Übernahme ersetzt werden. Vor der Übernahme entsteht eine Versionssicherung.
+
 ## Neu in 0.2.3
 
 „Erneut erkennen“ im Bereich „Im Text entdeckt“ prüft das aktuelle Buch auch ohne neue Texteingabe. Prüfstatus und Uhrzeit machen den Abschluss sichtbar. Automatische Prüfungen laufen weiterhin nach Texteingaben; veraltete Worker-Ergebnisse werden verworfen.

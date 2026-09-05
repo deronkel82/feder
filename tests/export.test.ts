@@ -25,6 +25,14 @@ void test('EPUB contains first uncompressed mimetype, OPF, navigation and escape
   try {
     const p = seed().projects[0];
     p.title = 'Buch & Welt';
+    p.chapterMeta = [
+      {
+        name: p.scenes[0].chapter,
+        kind: 'chapter',
+        number: 'IV',
+        part: 'Akt I',
+      },
+    ];
     await exportEpub(p);
     const bytes = new Uint8Array(await blob!.arrayBuffer());
     assert.equal(new DataView(bytes.buffer).getUint16(8, true), 0);
@@ -33,6 +41,9 @@ void test('EPUB contains first uncompressed mimetype, OPF, navigation and escape
     assert.equal(strFromU8(files.mimetype), 'application/epub+zip');
     assert.ok(strFromU8(files['EPUB/package.opf']).includes('Buch &amp; Welt'));
     assert.ok(files['EPUB/nav.xhtml']);
+    assert.ok(
+      strFromU8(files['EPUB/nav.xhtml']).includes('Akt I · Kapitel IV'),
+    );
     assert.ok(strFromU8(files['EPUB/scene-0.xhtml']).includes('Mara'));
   } finally {
     URL.createObjectURL = original;

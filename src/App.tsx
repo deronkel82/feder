@@ -1,3 +1,6 @@
+import { ManuscriptTree } from './modules/manuscript-tree';
+import { chapterLabel, orderedScenes } from './core/chapters';
+import { sendIdea } from './core/plotting';
 import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import {
   Feather,
@@ -10,7 +13,6 @@ import {
   Check,
   ArrowUp,
   ArrowDown,
-  FileText,
   MoreHorizontal,
   BookOpen,
   ChevronRight,
@@ -65,7 +67,6 @@ import {
   reorderInChapter,
   appendToChapter,
   changeStructure,
-  groupScenes,
 } from './core/structure';
 import { StructureDialog, type StructureSelection } from './modules/structure';
 const statuses = ['Idee', 'Entwurf', 'Überarbeitung', 'Fertig'];
@@ -129,6 +130,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [dark, setDark] = useState(readDarkMode);
   const [structure, setStructure] = useState<StructureSelection | null>(null);
   const [query, setQuery] = useState('');
+  const [modulesOpen, setModulesOpen] = useState(() => {
+    try {
+      return localStorage.getItem('feder.navigation.modules') !== 'closed';
+    } catch {
+      return true;
+    }
+  });
   const [tab, setTab] = useState('details');
   const [selection, setSelection] = useState({ start: 0, end: 0, word: '' });
   const [offline, setOffline] = useState(!navigator.onLine);
@@ -204,7 +212,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   };
   function addScene() {
     const n = newScene(s.chapter);
-    update((p) => ({ ...p, scenes: appendToChapter(p.scenes, n) }));
+    update((p) => ({
+      ...p,
+      scenes: orderedScenes({ ...p, scenes: appendToChapter(p.scenes, n) }),
+    }));
     setSelected(n.id);
     setView('write');
   }
@@ -259,7 +270,33 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             </span>
             <MoreHorizontal size={18} />
           </button>
-          <Navigation view={view} go={go} enabled={p.enabled} />
+          <button
+            className="module-collapse"
+            aria-expanded={modulesOpen}
+            onClick={() => {
+              setModulesOpen(!modulesOpen);
+              try {
+                localStorage.setItem(
+                  'feder.navigation.modules',
+                  modulesOpen ? 'closed' : 'open',
+                );
+              } catch {
+                /* local preference */
+              }
+            }}
+          >
+            <ChevronRight
+              size={15}
+              style={{ transform: modulesOpen ? 'rotate(90deg)' : undefined }}
+            />
+            {modulesOpen
+              ? 'Werkzeuge'
+              : modules.find((m) => m.id === view)?.label || 'Werkzeuge'}
+            <small>{modulesOpen ? 'Einklappen' : 'Ausklappen'}</small>
+          </button>
+          {modulesOpen && (
+            <Navigation view={view} go={go} enabled={p.enabled} />
+          )}
           <div className="sidebar-divider" />
           <div className="section-label">
             <span>MANUSKRIPT</span>
@@ -289,56 +326,16 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               placeholder="Szenen durchsuchen"
             />
           </label>
-          <div className="scene-list">
-            {groupScenes(p.scenes)
-              .filter((x) =>
-                (x.title + ' ' + x.text + ' ' + x.chapter)
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-              )
-              .map((x, i, a) => (
-                <div key={x.id}>
-                  {(i === 0 || a[i - 1].chapter !== x.chapter) && (
-                    <div className="chapter-label">
-                      <span>{x.chapter || '(Unbenannt)'}</span>
-                      <button
-                        aria-label={`Kapitel ${x.chapter} bearbeiten`}
-                        title="Kapitel bearbeiten"
-                        onClick={() =>
-                          setStructure({ kind: 'chapter', id: x.chapter })
-                        }
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </div>
-                  )}
-                  <div className="scene-nav-row">
-                    <SceneButton
-                      scene={x}
-                      active={s.id === x.id && view === 'write'}
-                      onClick={() => {
-                        setSelected(x.id);
-                        setView('write');
-                      }}
-                    />
-                    <button
-                      className="scene-options"
-                      aria-label={`Szene ${x.title} verwalten`}
-                      title="Szene verwalten"
-                      onClick={() => setStructure({ kind: 'scene', id: x.id })}
-                    >
-                      <MoreHorizontal size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            {query &&
-              !p.scenes.some((x) =>
-                (x.title + ' ' + x.text + ' ' + x.chapter)
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-              ) && <p className="muted empty-small">Keine Szene gefunden.</p>}
-          </div>
+          <ManuscriptTree
+            project={p}
+            query={query}
+            selected={view === 'write' ? s.id : ''}
+            open={(id) => {
+              setSelected(id);
+              setView('write');
+            }}
+            manage={setStructure}
+          />
           <div className="sidebar-bottom">
             <div className="goal-heading">
               <span>Dein Buch wächst</span>
@@ -369,7 +366,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               <span>{modules.find((m) => m.id === view)?.label}</span>
               <ChevronRight size={14} />
               <span className="muted">
-                {view === 'write' ? s.chapter : p.title}
+                {view === 'write' ? chapterLabel(p, s.chapter) : p.title}
               </span>
             </div>
             <div className="top-actions">
@@ -448,7 +445,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 </div>
                 <article className="manuscript">
                   <div className="document-eyebrow">
-                    {s.chapter} <span> / </span>{' '}
+                    {chapterLabel(p, s.chapter)} <span> / </span>{' '}
                     {String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
                   </div>
                   <input
@@ -464,6 +461,16 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     {words(s.text)} Wörter<span>·</span>
                     {Math.max(1, Math.ceil(words(s.text) / 200))} Min. Lesezeit
                   </div>
+                  {!s.text.trim() && (
+                    <label className="planned-synopsis">
+                      ZUSAMMENFASSUNG / PLANUNG
+                      <textarea
+                        value={s.synopsis}
+                        onChange={(e) => patch({ synopsis: e.target.value })}
+                        placeholder="Was soll in dieser Szene passieren?"
+                      />
+                    </label>
+                  )}
                   <textarea
                     ref={editor}
                     className="writing-text"
@@ -557,6 +564,19 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   }
                   project={p}
                   update={update}
+                  openScene={(id) => {
+                    setSelected(id);
+                    setView('write');
+                  }}
+                  sendIdea={(card, target) => {
+                    const result = sendIdea(library, card, target);
+                    setLibrary(result.library);
+                    setSelected(result.sceneId);
+                    setView('write');
+                    setNotice(
+                      'Idee als geplante Szene übernommen. Die Zusammenfassung steht bereit.',
+                    );
+                  }}
                 />
                 {view === 'world' && (
                   <EntityPanel {...recognition} project={p} update={update} />
@@ -746,7 +766,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               (x) => x.id === next.active,
             )!.scenes;
             setView('write');
-            if (action.type === 'newChapter') setSelected(scenes.at(-1)!.id);
+            if (action.type === 'newChapter')
+              setSelected(
+                scenes.find((s) => s.chapter === action.chapter.trim())!.id,
+              );
             else if (action.type === 'move' || action.type === 'promote')
               setSelected(action.sceneId);
             else if (!scenes.some((x) => x.id === selected))
@@ -861,30 +884,6 @@ function Navigation({
           </button>
         ))}
     </nav>
-  );
-}
-function SceneButton({
-  scene,
-  active,
-  onClick,
-}: {
-  scene: Scene;
-  active: boolean;
-  onClick: () => void;
-}) {
-  const { setOpenMobile } = useSidebar();
-  return (
-    <button
-      className={`scene-button ${active ? 'selected' : ''}`}
-      onClick={() => {
-        onClick();
-        setOpenMobile(false);
-      }}
-    >
-      <FileText size={15} />
-      <span>{scene.title || 'Ohne Titel'}</span>
-      <span className={`status-dot status-${scene.status}`} />
-    </button>
   );
 }
 function Findings({

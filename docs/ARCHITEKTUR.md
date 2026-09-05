@@ -10,6 +10,9 @@ Feder ist eine statisch ausgelieferte React/TypeScript-PWA. Kein Backend, keine 
 - `src/modules/thesaurus.tsx`: lokal geladenes, austauschbares Wörterbuch. Laden erst bei erster Suche; PWA-Cache hält Daten offline bereit.
 - `src/modules/publishing.ts`: HTML-escaping, EPUB-3-ZIP und Druckansicht.
 - `src/core/structure.ts` und `src/modules/structure.tsx`: Kapitelverwaltung auf dem bestehenden Szenenschema; Strukturänderungen mit vorherigem Snapshot. Kapitel sind benannte Gruppen; Namen innerhalb eines Buchs sind eindeutig.
+- `src/core/chapters.ts`: optionale Kapitelmetadaten, gemeinsame Nummern-/Gruppenanzeige und Lesereihenfolge für Navigation und Exporte. Prolog/Epilog rahmen die normalen Teile ein.
+- `src/core/plotting.ts`: atomare Ideenübernahme mit Snapshot und projektlokaler Szenenverknüpfung, Schutz gegen Duplikate.
+- `src/modules/manuscript-tree.tsx`: einklappbare Teile/Kapitel, lokale UI-Präferenzen und Suche auch in Zusammenfassungen.
 - `src/core/preferences.ts`: Dark-Mode-Geräteeinstellung, separat von Manuskripten.
 - `src/modules/projects.tsx` und `series.tsx`: Bücher, Buchreihen, Import/Export.
 - `src/core/history.ts` und `src/modules/versions.tsx`: vollständige nummerierte Snapshots, automatische Überarbeitungsstände, Vergleich und Wiederherstellung.

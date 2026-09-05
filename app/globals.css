@@ -1887,3 +1887,104 @@ small,
   font-size: 12px;
   line-height: 1.5;
 }
+
+.module-collapse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.module-collapse small {
+  margin-left: auto;
+  font-size: 10px;
+}
+.module-nav {
+  flex-shrink: 0;
+}
+.part-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 7px 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.part-heading span,
+.chapter-toggle span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.part-heading small,
+.chapter-toggle small {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.chapter-in-part {
+  margin-left: 8px;
+  border-left: 1px solid var(--border);
+}
+.manuscript-tree .chapter-label {
+  margin: 8px 0 3px;
+  gap: 0;
+}
+.chapter-toggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.part-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.part-options button {
+  padding: 5px 8px;
+  border: 1px solid var(--input);
+  border-radius: 5px;
+  font-size: 12px;
+}
+.idea-transfer {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-block: 1px solid var(--border);
+}
+.idea-transfer select {
+  width: 100%;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--input);
+  padding: 9px;
+  border-radius: 6px;
+}
+.card-dialog {
+  max-height: 85dvh;
+  overflow: auto;
+}
+.planned-synopsis {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  font: 11px var(--font-geist-sans);
+  color: var(--muted-foreground);
+  letter-spacing: 1px;
+}
+.planned-synopsis textarea {
+  min-height: 80px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--input);
+  background: var(--card);
+  border-radius: 6px;
+  font: 15px/1.6 var(--font-geist-sans);
+  letter-spacing: normal;
+}

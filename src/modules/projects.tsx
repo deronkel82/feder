@@ -1,3 +1,4 @@
+import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
 import { Plus, Download, Upload, BookOpen } from 'lucide-react';
 import {
@@ -91,10 +92,19 @@ export function ProjectDialog({
   }
   const manuscript = () =>
     `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
-    project.scenes
+    chapterGroups(project)
       .map(
-        (s, i) =>
-          `${i === 0 || project.scenes[i - 1].chapter !== s.chapter ? '## ' + s.chapter + '\n\n' : ''}### ${s.title}\n\n${s.text}`,
+        (g) =>
+          (g.part ? '## ' + g.part + '\n\n' : '') +
+          g.chapters
+            .map(
+              (c) =>
+                `### ${c.label}\n\n` +
+                c.scenes
+                  .map((s) => `#### ${s.title}\n\n${s.text}`)
+                  .join('\n\n'),
+            )
+            .join('\n\n'),
       )
       .join('\n\n');
   return (

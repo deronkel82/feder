@@ -1,3 +1,8 @@
+import {
+  chapterLabel,
+  chapterDetails,
+  orderedScenes,
+} from '../core/chapters.ts';
 import { zipSync, strToU8 } from 'fflate';
 import { type Project } from '../core/model.ts';
 import { safeName } from '../core/storage.ts';
@@ -21,6 +26,7 @@ export const paragraphs = (s: string) =>
     )
     .join('\n');
 export async function exportEpub(p: Project) {
+  p = { ...p, scenes: orderedScenes(p) };
   const files: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {
     mimetype: [strToU8('application/epub+zip'), { level: 0 }],
   };
@@ -34,14 +40,14 @@ export async function exportEpub(p: Project) {
       (files[`EPUB/scene-${i}.xhtml`] = strToU8(
         xhtml(
           s.title,
-          `<h2>${escape(s.chapter)}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}`,
+          `<h2>${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}`,
         ),
       )),
   );
   files['EPUB/nav.xhtml'] = strToU8(
     xhtml(
       p.title,
-      `<nav epub:type="toc" id="toc"><h1>${escape(p.title)}</h1><ol>${p.scenes.map((s, i) => `<li><a href="scene-${i}.xhtml">${escape(s.chapter)} · ${escape(s.title)}</a></li>`).join('')}</ol></nav>`,
+      `<nav epub:type="toc" id="toc"><h1>${escape(p.title)}</h1><ol>${p.scenes.map((s, i) => `<li><a href="scene-${i}.xhtml">${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))} · ${escape(s.title)}</a></li>`).join('')}</ol></nav>`,
     ),
   );
   files['EPUB/package.opf'] = strToU8(
@@ -58,6 +64,7 @@ export async function exportEpub(p: Project) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 export function printBook(p: Project) {
+  p = { ...p, scenes: orderedScenes(p) };
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
   document.body.appendChild(frame);
@@ -66,5 +73,5 @@ export function printBook(p: Project) {
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 60000);
   };
-  frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif;color:#111}section{break-before:page}h1{font-size:26pt}p{orphans:3;widows:3}.cover{padding-top:35%;text-align:center}</style></head><body><div class="cover"><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p></div>${p.scenes.map((s) => `<section><h2>${escape(s.chapter)}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}</section>`).join('')}</body></html>`;
+  frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif;color:#111}section{break-before:page}h1{font-size:26pt}p{orphans:3;widows:3}.cover{padding-top:35%;text-align:center}</style></head><body><div class="cover"><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p></div>${p.scenes.map((s) => `<section><h2>${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}</section>`).join('')}</body></html>`;
 }

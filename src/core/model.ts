@@ -1,3 +1,4 @@
+import type { ChapterMeta } from './chapters.ts';
 export type Scene = {
   id: string;
   title: string;
@@ -10,6 +11,7 @@ export type Scene = {
   notes: string;
 };
 export type Card = {
+  manuscriptSceneId?: string;
   id: string;
   title: string;
   subtitle: string;
@@ -19,6 +21,7 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  chapterMeta?: ChapterMeta[];
   series: Series;
   dismissedEntities: string[];
   id: string;
@@ -187,6 +190,23 @@ export function validateLibrary(data: unknown): Library {
       !p.dismissedEntities.every(str)
     )
       throw Error('Ungültige Reihen- oder Erkennungsdaten.');
+    if (p.chapterMeta !== undefined) {
+      if (!Array.isArray(p.chapterMeta))
+        throw Error('Ungültige Kapitelangaben.');
+      const chapterNames = new Set<string>();
+      for (const c of p.chapterMeta) {
+        if (
+          !c ||
+          !str(c.name) ||
+          !str(c.number) ||
+          !str(c.part) ||
+          !['chapter', 'prologue', 'epilogue'].includes(c.kind) ||
+          chapterNames.has(c.name)
+        )
+          throw Error('Ungültige Kapitelangaben.');
+        chapterNames.add(c.name);
+      }
+    }
     ids.add(p.id);
     const sids = new Set();
     for (const s of p.scenes) {
@@ -214,6 +234,7 @@ export function validateLibrary(data: unknown): Library {
         !['id', 'title', 'subtitle', 'text'].every((k) =>
           str(c[k as keyof Card]),
         ) ||
+        (c.manuscriptSceneId !== undefined && !str(c.manuscriptSceneId)) ||
         !['Figur', 'Ort', 'Recherche', 'Idee'].includes(c.kind) ||
         !['Sammlung', 'Entwicklung', 'Im Manuskript'].includes(c.stage)
       )

@@ -1,3 +1,4 @@
+import { chapterLabel } from '../core/chapters';
 import { useState } from 'react';
 import {
   Plus,
@@ -25,7 +26,16 @@ export function CardsView({
   kind,
   project,
   update,
-}: Props & { kind: Card['kind'] }) {
+  sendIdea,
+  openScene,
+}: Props & {
+  sendIdea: (
+    card: Card,
+    target: { kind: 'scene' | 'chapter'; chapter: string },
+  ) => void;
+  openScene: (id: string) => void;
+  kind: Card['kind'];
+}) {
   const [filter, setFilter] = useState<Card['kind']>(kind);
   const actual = kind === 'Figur' ? filter : kind;
   const [editing, setEditing] = useState<Card | null>(null);
@@ -246,6 +256,15 @@ export function CardsView({
                   />
                 </div>
               )}
+              {board && (
+                <IdeaTransfer
+                  key={editing.id}
+                  card={editing}
+                  project={project}
+                  send={sendIdea}
+                  open={openScene}
+                />
+              )}
               <button className="primary-button" type="submit">
                 Karte speichern
               </button>
@@ -302,7 +321,7 @@ export function TimelineView({
             <span className="timeline-point" />
             <button className="timeline-card" onClick={() => openScene(s.id)}>
               <small>
-                {s.chapter} · {s.status}
+                {chapterLabel(project, s.chapter)} · {s.status}
               </small>
               <h2>{s.title}</h2>
               <p>
@@ -317,6 +336,101 @@ export function TimelineView({
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function IdeaTransfer({
+  card,
+  project,
+  send,
+  open,
+}: {
+  card: Card;
+  project: Project;
+  send: (
+    card: Card,
+    target: { kind: 'scene' | 'chapter'; chapter: string },
+  ) => void;
+  open: (id: string) => void;
+}) {
+  const [chapter, setChapter] = useState(project.scenes[0].chapter);
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const linked = project.scenes.find((s) => s.id === card.manuscriptSceneId);
+  function transfer(kind: 'scene' | 'chapter') {
+    try {
+      send(card, {
+        kind,
+        chapter: kind === 'scene' ? chapter : name || card.title,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Übernahme fehlgeschlagen.');
+    }
+  }
+  return (
+    <section className="idea-transfer">
+      <h3>Ins Manuskript übernehmen</h3>
+      <p className="muted small">
+        Der Status allein sortiert die Karte. Die Übernahme erstellt eine
+        geplante Szene: Kurzbeschreibung und Notizen werden zur Zusammenfassung,
+        der Manuskripttext bleibt leer. Spätere Änderungen werden nicht
+        automatisch synchronisiert.
+      </p>
+      {linked ? (
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => open(linked.id)}
+        >
+          Verknüpfte Szene öffnen
+        </button>
+      ) : (
+        <>
+          <label className="field-label">
+            BESTEHENDES KAPITEL
+            <select
+              value={chapter}
+              onChange={(e) => setChapter(e.target.value)}
+            >
+              {[...new Set(project.scenes.map((s) => s.chapter))].map((c) => (
+                <option key={c} value={c}>
+                  {chapterLabel(project, c)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => transfer('scene')}
+          >
+            Als neue Szene übernehmen
+          </button>
+          <label className="field-label">
+            NEUES KAPITEL
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={card.title || 'Kapitelname'}
+            />
+          </label>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => transfer('chapter')}
+          >
+            Als neues Kapitel übernehmen
+          </button>
+          {card.manuscriptSceneId && (
+            <p className="muted small">
+              Die zuvor verknüpfte Szene ist nicht mehr vorhanden. Du kannst die
+              Idee erneut übernehmen.
+            </p>
+          )}
+        </>
+      )}
+      {error && <p role="alert">{error}</p>}
     </section>
   );
 }
