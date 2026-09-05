@@ -1,3 +1,4 @@
+import { isShort, usesScenes } from './project-format.ts';
 import { chapterDetails, orderedScenes, type ChapterMeta } from './chapters.ts';
 import { moveScene, newScene, type Scene, type Library } from './model.ts';
 import { withSnapshot } from './history.ts';
@@ -36,6 +37,13 @@ export function changeStructure(
   action: StructureAction,
 ): Library {
   const project = library.projects.find((p) => p.id === library.active)!;
+  if (isShort(project))
+    throw Error('Kurzgeschichten verwenden einen zusammenhängenden Text.');
+  if (
+    !usesScenes(project) &&
+    ['move', 'promote', 'collapse', 'deleteScene'].includes(action.type)
+  )
+    throw Error('Die Szenenmethodik ist für dieses Projekt abgeschaltet.');
   let scenes = orderedScenes(project);
   let chapterMeta = [...new Set(scenes.map((s) => s.chapter))].map((name) =>
     chapterDetails(project, name),

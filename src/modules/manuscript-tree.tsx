@@ -1,3 +1,4 @@
+import { isShort, usesScenes } from '../core/project-format';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useState } from 'react';
 import {
@@ -72,6 +73,21 @@ export function ManuscriptTree({
         .filter((c) => c.scenes.length),
     }))
     .filter((g) => g.chapters.length);
+  if (isShort(project))
+    return (
+      <div className="scene-list">
+        <button
+          className="scene-button selected"
+          onClick={() => {
+            open(project.scenes[0].id);
+            setOpenMobile(false);
+          }}
+        >
+          <FileText size={14} />
+          <span>{project.title || 'Dein Text'}</span>
+        </button>
+      </div>
+    );
   return (
     <div className="scene-list manuscript-tree">
       {groups.map((g) => (
@@ -96,17 +112,29 @@ export function ManuscriptTree({
               <div key={c.name} className={g.part ? 'chapter-in-part' : ''}>
                 <div className="chapter-label">
                   <button
-                    className="chapter-toggle"
-                    aria-expanded={isOpen(key('chapter', c.name))}
-                    onClick={() => toggle(key('chapter', c.name))}
+                    className={`chapter-toggle ${!usesScenes(project) && c.scenes.some((s) => s.id === selected) ? 'active-chapter' : ''}`}
+                    aria-expanded={
+                      usesScenes(project)
+                        ? isOpen(key('chapter', c.name))
+                        : undefined
+                    }
+                    onClick={() => {
+                      if (usesScenes(project)) toggle(key('chapter', c.name));
+                      else {
+                        open(c.scenes[0].id);
+                        setOpenMobile(false);
+                      }
+                    }}
                   >
-                    {isOpen(key('chapter', c.name)) ? (
+                    {!usesScenes(project) ? (
+                      <FileText size={14} />
+                    ) : isOpen(key('chapter', c.name)) ? (
                       <ChevronDown size={14} />
                     ) : (
                       <ChevronRight size={14} />
                     )}
                     <span>{c.label}</span>
-                    <small>{c.scenes.length}</small>
+                    {usesScenes(project) && <small>{c.scenes.length}</small>}
                   </button>
                   <button
                     title="Kapitel bearbeiten"
@@ -116,7 +144,8 @@ export function ManuscriptTree({
                     <MoreHorizontal size={16} />
                   </button>
                 </div>
-                {isOpen(key('chapter', c.name)) &&
+                {usesScenes(project) &&
+                  isOpen(key('chapter', c.name)) &&
                   c.scenes.map((s) => (
                     <div className="scene-nav-row" key={s.id}>
                       <button

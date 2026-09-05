@@ -114,7 +114,7 @@ export function Versions({
             <section>
               <h3>Aktueller Stand</h3>
               <pre>
-                {current?.text || '(Szene leer oder nicht mehr vorhanden)'}
+                {current?.text || '(Text leer oder nicht mehr vorhanden)'}
               </pre>
             </section>
           </div>

@@ -1,3 +1,4 @@
+import { isShort, usesScenes } from '../core/project-format';
 import { useEffect, useState, useRef } from 'react';
 import { uid, type Project } from '../core/model';
 import type { Entity } from './entities';
@@ -157,7 +158,12 @@ export function EntityPanel({
         <div className="entity-row" key={e.key}>
           <strong>{e.name}</strong>
           <small>
-            {e.kind} · {e.sceneIds.length} Szenen
+            {e.kind} · {e.sceneIds.length}{' '}
+            {isShort(project)
+              ? 'Text'
+              : usesScenes(project)
+                ? 'Szenen'
+                : 'Kapitel'}
             {e.knownId ? ' · Bereits in deiner Romanwelt' : ''}
           </small>
           <p>{e.context}</p>

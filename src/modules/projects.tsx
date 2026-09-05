@@ -1,3 +1,16 @@
+import {
+  FormatFields,
+  ProjectModeSettings,
+  LimitFields,
+} from './project-options';
+import {
+  configureProject,
+  projectFormat,
+  isShort,
+  usesScenes,
+  defaultTarget,
+  formatNames,
+} from '../core/project-format';
 import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
 import { Plus, Download, Upload, BookOpen } from 'lucide-react';
@@ -92,25 +105,30 @@ export function ProjectDialog({
   }
   const manuscript = () =>
     `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
-    chapterGroups(project)
-      .map(
-        (g) =>
-          (g.part ? '## ' + g.part + '\n\n' : '') +
-          g.chapters
-            .map(
-              (c) =>
-                `### ${c.label}\n\n` +
-                c.scenes
-                  .map((s) => `#### ${s.title}\n\n${s.text}`)
-                  .join('\n\n'),
-            )
-            .join('\n\n'),
-      )
-      .join('\n\n');
+    (isShort(project)
+      ? project.scenes[0].text
+      : chapterGroups(project)
+          .map(
+            (g) =>
+              (g.part ? '## ' + g.part + '\n\n' : '') +
+              g.chapters
+                .map(
+                  (c) =>
+                    `### ${c.label}\n\n` +
+                    c.scenes
+                      .map(
+                        (s) =>
+                          `${usesScenes(project) ? '#### ' + s.title + '\n\n' : ''}${s.text}`,
+                      )
+                      .join('\n\n'),
+                )
+                .join('\n\n'),
+          )
+          .join('\n\n'));
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="project-dialog">
-        <DialogTitle>Deine Bücher.</DialogTitle>
+        <DialogTitle>Deine Projekte.</DialogTitle>
         <DialogDescription>
           Alles bleibt lokal auf diesem Gerät. Sichere regelmäßig eine Kopie
           deiner Arbeit.
@@ -129,8 +147,14 @@ export function ProjectDialog({
               <span>
                 {p.title}
                 <small>
-                  {p.scenes.length} Szenen{' '}
-                  {p.series.enabled ? ' · ' + seriesLabel(p.series) : ''}
+                  {formatNames[projectFormat(p)]} ·{' '}
+                  {isShort(p)
+                    ? 'Ein Text'
+                    : p.scenes.length +
+                      (usesScenes(p) ? ' Szenen' : ' Kapitel')}{' '}
+                  {!isShort(p) && p.series.enabled
+                    ? ' · ' + seriesLabel(p.series)
+                    : ''}
                 </small>
               </span>
               {p.id === library.active && <small>Aktiv</small>}
@@ -139,7 +163,7 @@ export function ProjectDialog({
         </div>
         <button className="text-button" onClick={() => setCreating(true)}>
           <Plus size={16} />
-          Neues Buch
+          Neues Projekt
         </button>
         {creating && (
           <form
@@ -156,23 +180,45 @@ export function ProjectDialog({
               setDraft(newProject(''));
             }}
           >
-            <h2>Neues Buch anlegen</h2>
+            <h2>Neues Projekt anlegen</h2>
             <label className="field-label">
-              BUCHTITEL
+              TITEL
               <input
                 required
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
               />
             </label>
-            <SeriesFields
-              value={draft.series}
-              onChange={(series) => setDraft({ ...draft, series })}
-              required
+            <FormatFields
+              format={projectFormat(draft)}
+              sceneMode={usesScenes(draft)}
+              change={(format, sceneMode) =>
+                setDraft({
+                  ...draft,
+                  format,
+                  sceneMode: format === 'short' ? false : sceneMode,
+                  target:
+                    format !== projectFormat(draft)
+                      ? defaultTarget(format)
+                      : draft.target,
+                  series:
+                    format === 'short'
+                      ? { ...draft.series, enabled: false }
+                      : draft.series,
+                })
+              }
             />
+            <LimitFields project={draft} update={(fn) => setDraft(fn)} />
+            {!isShort(draft) && (
+              <SeriesFields
+                value={draft.series}
+                onChange={(series) => setDraft({ ...draft, series })}
+                required
+              />
+            )}
             <div className="form-actions">
               <button className="primary-button" type="submit">
-                Buch anlegen
+                Projekt anlegen
               </button>
               <button type="button" onClick={() => setCreating(false)}>
                 Abbrechen
@@ -183,7 +229,7 @@ export function ProjectDialog({
 
         <div className="project-fields">
           <label className="field-label">
-            BUCHTITEL
+            TITEL
             <input
               value={project.title}
               onChange={(e) => update((p) => ({ ...p, title: e.target.value }))}
@@ -198,29 +244,27 @@ export function ProjectDialog({
               }
             />
           </label>
-          <label className="field-label">
-            WORTZIEL
-            <input
-              type="number"
-              min="1"
-              max="10000000"
-              value={project.target}
-              onChange={(e) =>
-                update((p) => ({
-                  ...p,
-                  target: Math.max(
-                    1,
-                    Math.min(10000000, Number(e.target.value) || 1),
-                  ),
-                }))
-              }
-            />
-          </label>
         </div>
-        <SeriesFields
-          value={project.series}
-          onChange={(series) => update((p) => ({ ...p, series }))}
+        <ProjectModeSettings
+          key={
+            project.id + projectFormat(project) + String(usesScenes(project))
+          }
+          project={project}
+          apply={(format, mode) => {
+            setLibrary((l) => configureProject(l, format, mode));
+            select(project.scenes[0].id);
+            setMessage(
+              'Projektart geändert. Der vorherige Stand ist als Version gesichert.',
+            );
+          }}
         />
+        <LimitFields project={project} update={update} />
+        {!isShort(project) && (
+          <SeriesFields
+            value={project.series}
+            onChange={(series) => update((p) => ({ ...p, series }))}
+          />
+        )}
         <h2 className="dialog-section">Mitnehmen & sichern</h2>
         <div className="export-grid">
           <button

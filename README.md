@@ -39,6 +39,15 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.4.0
+
+- Beim Anlegen: Roman (50.000 Wörter), Novelle/Erzählung (20.000) oder Kurzgeschichte (2.500) wählen. Dies sind frei änderbare Startwerte, keine literarischen Definitionen. Bestehende Projekte bleiben Romane mit Szenen; ihre Wortziele werden nicht verändert.
+- Roman und Novelle können mit „Ein Text pro Kapitel“ ohne separate Szenen arbeiten. Bei bestehenden Projekten werden Texte pro Kapitel in Reihenfolge zusammengefügt; Metadaten bleiben in Notizen und der vorherigen Versionssicherung erhalten. Ideenverknüpfungen werden angepasst. Erneutes Einschalten teilt Texte nicht automatisch auf; der vorherige Aufbau kann über Versionen wiederhergestellt werden.
+- Kurzgeschichten bestehen aus einem Text ohne Kapitel-/Reihen-/Bandverwaltung, auch im Export. Die Umstellung bestehender Projekte sichert zuerst den Originalstand. Ideen lassen sich zur Zusammenfassung des Gesamttexts hinzufügen.
+- Unten stehen Wörter und Zeichen. Kurzgeschichten unterstützen ein abschaltbares Wortlimit und ein Zeichenlimit (0 = deaktiviert). Bei Überschreitung wird der jeweilige Zähler und Balken rot, ergänzt um den Überhang. Bei Roman/Novelle sind es Ziele, keine harten Obergrenzen.
+- Gezählt wird Manuskripttext, nicht Titel, Zusammenfassungen oder Notizen. Zeichen umfassen Leerzeichen und normalisierte Absatzumbrüche; zwischen nichtleeren Textabschnitten zählen zwei Umbrüche. Unicode-Codepunkte werden gezählt (ein Emoji kann aus mehreren Codepunkten bestehen). Wettbewerbe können andere Zählregeln vorgeben.
+- Projektart, Textstruktur und Ziele lassen sich in „Projekte & Export“ nachträglich ändern. Die Einstellungen sind optionale, validierte Erweiterungen der V2-Sicherung; vorhandene Daten bleiben kompatibel.
+
 ## Neu in 0.3.0
 
 - Die Werkzeugnavigation lässt sich über „Werkzeuge / Einklappen“ reduzieren. Teile und Kapitel sind einzeln einklappbar; der Zustand bleibt auf diesem Gerät gespeichert. Die Suche findet auch Szenenzusammenfassungen und zeigt Treffer in eingeklappten Bereichen.

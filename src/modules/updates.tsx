@@ -154,11 +154,11 @@ export function UpdateNotice({
           }
         >
           <RefreshCw size={17} />
-          <span className="update-version">0.3.0</span>
+          <span className="update-version">0.4.0</span>
           {updates.waiting && <span className="update-dot" />}
         </PopoverTrigger>
         <PopoverContent align="end" sideOffset={10} className="update-popover">
-          <PopoverTitle>Feder 0.3.0</PopoverTitle>
+          <PopoverTitle>Feder 0.4.0</PopoverTitle>
           <PopoverDescription>
             {updates.waiting
               ? 'Eine neue Version steht bereit.'

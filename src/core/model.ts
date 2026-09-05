@@ -21,6 +21,10 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  format?: 'novel' | 'novella' | 'short';
+  sceneMode?: boolean;
+  charTarget?: number;
+  wordLimitEnabled?: boolean;
   chapterMeta?: ChapterMeta[];
   series: Series;
   dismissedEntities: string[];
@@ -190,6 +194,18 @@ export function validateLibrary(data: unknown): Library {
       !p.dismissedEntities.every(str)
     )
       throw Error('Ungültige Reihen- oder Erkennungsdaten.');
+    if (
+      (p.format !== undefined &&
+        !['novel', 'novella', 'short'].includes(p.format)) ||
+      (p.sceneMode !== undefined && typeof p.sceneMode !== 'boolean') ||
+      (p.wordLimitEnabled !== undefined &&
+        typeof p.wordLimitEnabled !== 'boolean') ||
+      (p.charTarget !== undefined &&
+        (!Number.isInteger(p.charTarget) ||
+          p.charTarget < 0 ||
+          p.charTarget > 100000000))
+    )
+      throw Error('Ungültige Projektart oder Zeichenbegrenzung.');
     if (p.chapterMeta !== undefined) {
       if (!Array.isArray(p.chapterMeta))
         throw Error('Ungültige Kapitelangaben.');
@@ -228,6 +244,17 @@ export function validateLibrary(data: unknown): Library {
         throw Error('Ungültige Szene.');
       sids.add(s.id);
     }
+    if (p.format === 'short' && p.scenes.length !== 1)
+      throw Error(
+        'Kurzgeschichten müssen einen zusammenhängenden Text enthalten.',
+      );
+    if (
+      p.sceneMode === false &&
+      new Set(p.scenes.map((s) => s.chapter)).size !== p.scenes.length
+    )
+      throw Error(
+        'Ohne Szenenmethodik darf jedes Kapitel nur einen Text enthalten.',
+      );
     for (const c of p.cards) {
       if (
         !c ||

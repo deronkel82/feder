@@ -1,3 +1,4 @@
+import { usesScenes } from '../core/project-format';
 import { chapterDetails } from '../core/chapters';
 import { ChapterFields } from './chapter-fields';
 import { useState } from 'react';
@@ -129,9 +130,11 @@ export function StructureDialog({
                   <option value="rename">
                     Kapitel, Nummer und Teil bearbeiten
                   </option>
-                  <option value="collapse">
-                    Kapitel in eine Szene umwandeln
-                  </option>
+                  {usesScenes(project) && (
+                    <option value="collapse">
+                      Kapitel in eine Szene umwandeln
+                    </option>
+                  )}
                   <option value="deleteChapter">
                     Kapitel mit allen Szenen löschen
                   </option>

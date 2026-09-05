@@ -1,3 +1,5 @@
+import { isShort, usesScenes } from './core/project-format';
+import { WritingProgress } from './modules/writing-progress';
 import { ManuscriptTree } from './modules/manuscript-tree';
 import { chapterLabel, orderedScenes } from './core/chapters';
 import { sendIdea } from './core/plotting';
@@ -42,7 +44,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { modules } from './modules/registry';
 import { analyze } from './modules/analysis';
@@ -146,7 +147,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const updates = useUpdates(library, saveError);
   const recognition = useEntities(p);
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
-  const total = p.scenes.reduce((n, s) => n + words(s.text), 0);
   const deferred = useDeferredValue(s.text);
   const findings = useMemo(() => analyze(deferred), [deferred]);
   useEffect(() => {
@@ -211,6 +211,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
     setFocus(false);
   };
   function addScene() {
+    if (!usesScenes(p)) {
+      if (!isShort(p)) setStructure({ kind: 'new', id: '' });
+      return;
+    }
     const n = newScene(s.chapter);
     update((p) => ({
       ...p,
@@ -266,7 +270,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             <span>
               <small>DEIN PROJEKT</small>
               <strong>{p.title}</strong>
-              {p.series.enabled && <small>{seriesLabel(p.series)}</small>}
+              {!isShort(p) && p.series.enabled && (
+                <small>{seriesLabel(p.series)}</small>
+              )}
             </span>
             <MoreHorizontal size={18} />
           </button>
@@ -300,22 +306,26 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           <div className="sidebar-divider" />
           <div className="section-label">
             <span>MANUSKRIPT</span>
-            <div className="manuscript-add">
-              <button
-                aria-label="Kapitel hinzufügen"
-                title="Kapitel hinzufügen"
-                onClick={() => setStructure({ kind: 'new', id: '' })}
-              >
-                <BookOpen size={16} />
-              </button>
-              <button
-                aria-label="Szene hinzufügen"
-                title="Szene hinzufügen"
-                onClick={addScene}
-              >
-                <Plus size={17} />
-              </button>
-            </div>
+            {!isShort(p) && (
+              <div className="manuscript-add">
+                <button
+                  aria-label="Kapitel hinzufügen"
+                  title="Kapitel hinzufügen"
+                  onClick={() => setStructure({ kind: 'new', id: '' })}
+                >
+                  <BookOpen size={16} />
+                </button>
+                {usesScenes(p) && (
+                  <button
+                    aria-label="Szene hinzufügen"
+                    title="Szene hinzufügen"
+                    onClick={addScene}
+                  >
+                    <Plus size={17} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <label className="search-box">
             <Search size={15} />
@@ -323,7 +333,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               aria-label="Manuskript durchsuchen"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Szenen durchsuchen"
+              placeholder={
+                isShort(p)
+                  ? 'Text durchsuchen'
+                  : usesScenes(p)
+                    ? 'Szenen durchsuchen'
+                    : 'Kapitel durchsuchen'
+              }
             />
           </label>
           <ManuscriptTree
@@ -337,15 +353,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             manage={setStructure}
           />
           <div className="sidebar-bottom">
-            <div className="goal-heading">
-              <span>Dein Buch wächst</span>
-              <span>{Math.round((total / p.target) * 100)} %</span>
-            </div>
-            <Progress value={Math.min(100, (total / p.target) * 100)} />
-            <small>
-              {total.toLocaleString('de')} von {p.target.toLocaleString('de')}{' '}
-              Wörtern
-            </small>
+            <WritingProgress project={p} />
             <button
               className="footer-button"
               onClick={() => setProjectDialog(true)}
@@ -366,7 +374,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               <span>{modules.find((m) => m.id === view)?.label}</span>
               <ChevronRight size={14} />
               <span className="muted">
-                {view === 'write' ? chapterLabel(p, s.chapter) : p.title}
+                {view === 'write' && !isShort(p)
+                  ? chapterLabel(p, s.chapter)
+                  : p.title}
               </span>
             </div>
             <div className="top-actions">
@@ -444,16 +454,38 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   </button>
                 </div>
                 <article className="manuscript">
-                  <div className="document-eyebrow">
-                    {chapterLabel(p, s.chapter)} <span> / </span>{' '}
-                    {String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
-                  </div>
-                  <input
-                    className="scene-title"
-                    aria-label="Szenentitel"
-                    value={s.title}
-                    onChange={(e) => patch({ title: e.target.value })}
-                  />
+                  {!isShort(p) && (
+                    <div className="document-eyebrow">
+                      {chapterLabel(p, s.chapter)}
+                      {usesScenes(p) && (
+                        <>
+                          {' '}
+                          / {String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {usesScenes(p) ? (
+                    <input
+                      className="scene-title"
+                      aria-label="Szenentitel"
+                      value={s.title}
+                      onChange={(e) => patch({ title: e.target.value })}
+                    />
+                  ) : isShort(p) ? (
+                    <input
+                      className="scene-title"
+                      aria-label="Titel"
+                      value={p.title}
+                      onChange={(e) =>
+                        update((p) => ({ ...p, title: e.target.value }))
+                      }
+                    />
+                  ) : (
+                    <h1 className="scene-title">
+                      {chapterLabel(p, s.chapter)}
+                    </h1>
+                  )}
                   <div className="scene-meta">
                     <span className={`status-dot status-${s.status}`} />
                     {s.status}
@@ -467,7 +499,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       <textarea
                         value={s.synopsis}
                         onChange={(e) => patch({ synopsis: e.target.value })}
-                        placeholder="Was soll in dieser Szene passieren?"
+                        placeholder="Was soll in diesem Text passieren?"
                       />
                     </label>
                   )}
@@ -574,7 +606,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     setSelected(result.sceneId);
                     setView('write');
                     setNotice(
-                      'Idee als geplante Szene übernommen. Die Zusammenfassung steht bereit.',
+                      'Idee in die Textplanung übernommen. Die Zusammenfassung steht bereit.',
                     );
                   }}
                 />
@@ -595,7 +627,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     <ArrowLeft size={17} />
                   </button>
                   <span className="edition">
-                    SZENE {String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
+                    {isShort(p) ? 'TEXT' : usesScenes(p) ? 'SZENE' : 'KAPITEL'}{' '}
+                    {!isShort(p) &&
+                      String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
                   </span>
                 </div>
                 <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
@@ -619,25 +653,29 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         }
                       />
                     </div>
-                    <div className="field-label">
-                      KAPITEL<span>{s.chapter}</span>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          setStructure({ kind: 'scene', id: s.id })
-                        }
-                      >
-                        Szene verschieben / verwalten
-                      </button>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          setStructure({ kind: 'chapter', id: s.chapter })
-                        }
-                      >
-                        Kapitel verwalten
-                      </button>
-                    </div>
+                    {!isShort(p) && (
+                      <div className="field-label">
+                        KAPITEL<span>{chapterLabel(p, s.chapter)}</span>
+                        {usesScenes(p) && (
+                          <button
+                            className="text-button"
+                            onClick={() =>
+                              setStructure({ kind: 'scene', id: s.id })
+                            }
+                          >
+                            Szene verschieben / verwalten
+                          </button>
+                        )}
+                        <button
+                          className="text-button"
+                          onClick={() =>
+                            setStructure({ kind: 'chapter', id: s.chapter })
+                          }
+                        >
+                          Kapitel verwalten
+                        </button>
+                      </div>
+                    )}
                     <label className="field-label">
                       WAS PASSIERT?
                       <textarea
@@ -670,38 +708,41 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         onChange={(e) => patch({ notes: e.target.value })}
                       />
                     </label>
-                    <div className="reorder">
-                      <button
-                        disabled={
-                          p.scenes.filter((x) => x.chapter === s.chapter)[0]
-                            .id === s.id
-                        }
-                        onClick={() =>
-                          update((p) => ({
-                            ...p,
-                            scenes: reorderInChapter(p.scenes, s.id, -1),
-                          }))
-                        }
-                      >
-                        <ArrowUp size={15} />
-                        Nach vorn
-                      </button>
-                      <button
-                        disabled={
-                          p.scenes.filter((x) => x.chapter === s.chapter).at(-1)
-                            ?.id === s.id
-                        }
-                        onClick={() =>
-                          update((p) => ({
-                            ...p,
-                            scenes: reorderInChapter(p.scenes, s.id, 1),
-                          }))
-                        }
-                      >
-                        <ArrowDown size={15} />
-                        Nach hinten
-                      </button>
-                    </div>
+                    {usesScenes(p) && (
+                      <div className="reorder">
+                        <button
+                          disabled={
+                            p.scenes.filter((x) => x.chapter === s.chapter)[0]
+                              .id === s.id
+                          }
+                          onClick={() =>
+                            update((p) => ({
+                              ...p,
+                              scenes: reorderInChapter(p.scenes, s.id, -1),
+                            }))
+                          }
+                        >
+                          <ArrowUp size={15} />
+                          Nach vorn
+                        </button>
+                        <button
+                          disabled={
+                            p.scenes
+                              .filter((x) => x.chapter === s.chapter)
+                              .at(-1)?.id === s.id
+                          }
+                          onClick={() =>
+                            update((p) => ({
+                              ...p,
+                              scenes: reorderInChapter(p.scenes, s.id, 1),
+                            }))
+                          }
+                        >
+                          <ArrowDown size={15} />
+                          Nach hinten
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="inspector-body">

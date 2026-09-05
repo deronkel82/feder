@@ -1988,3 +1988,53 @@ small,
   font: 15px/1.6 var(--font-geist-sans);
   letter-spacing: normal;
 }
+
+.project-mode-settings,
+.limit-fields {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.project-mode-settings select,
+.new-book-form select {
+  width: 100%;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  padding: 10px;
+  border-radius: 6px;
+}
+.format-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+}
+.format-check input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+.writing-progress {
+  display: grid;
+  gap: 8px;
+}
+.writing-progress small {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+.limit-exceeded {
+  color: #c83232;
+}
+.dark .limit-exceeded {
+  color: #ff9393;
+}
+.limit-exceeded [data-slot='progress-indicator'] {
+  background: #d13d3d;
+}
+.active-chapter {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}

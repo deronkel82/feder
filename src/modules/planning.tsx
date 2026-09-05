@@ -1,3 +1,4 @@
+import { isShort, usesScenes } from '../core/project-format';
 import { chapterLabel } from '../core/chapters';
 import { useState } from 'react';
 import {
@@ -321,9 +322,18 @@ export function TimelineView({
             <span className="timeline-point" />
             <button className="timeline-card" onClick={() => openScene(s.id)}>
               <small>
-                {chapterLabel(project, s.chapter)} · {s.status}
+                {!isShort(project) && (
+                  <>{chapterLabel(project, s.chapter)} · </>
+                )}
+                {s.status}
               </small>
-              <h2>{s.title}</h2>
+              <h2>
+                {isShort(project)
+                  ? project.title
+                  : usesScenes(project)
+                    ? s.title
+                    : chapterLabel(project, s.chapter)}
+              </h2>
               <p>
                 {s.synopsis ||
                   'Füge in den Szenendetails eine Zusammenfassung hinzu.'}
@@ -372,10 +382,11 @@ function IdeaTransfer({
     <section className="idea-transfer">
       <h3>Ins Manuskript übernehmen</h3>
       <p className="muted small">
-        Der Status allein sortiert die Karte. Die Übernahme erstellt eine
-        geplante Szene: Kurzbeschreibung und Notizen werden zur Zusammenfassung,
-        der Manuskripttext bleibt leer. Spätere Änderungen werden nicht
-        automatisch synchronisiert.
+        {usesScenes(project)
+          ? 'Die Übernahme erstellt eine geplante Szene mit leerem Manuskripttext.'
+          : 'Die Übernahme ergänzt die Zusammenfassung des gewählten Texts oder legt ein neues Kapitel an. Bestehender Manuskripttext bleibt erhalten.'}{' '}
+        Kurzbeschreibung und Notizen werden zur Planung. Spätere Änderungen
+        werden nicht automatisch synchronisiert.
       </p>
       {linked ? (
         <button
@@ -383,48 +394,58 @@ function IdeaTransfer({
           className="primary-button"
           onClick={() => open(linked.id)}
         >
-          Verknüpfte Szene öffnen
+          {usesScenes(project)
+            ? 'Verknüpfte Szene öffnen'
+            : 'Verknüpften Text öffnen'}
         </button>
       ) : (
         <>
-          <label className="field-label">
-            BESTEHENDES KAPITEL
-            <select
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value)}
-            >
-              {[...new Set(project.scenes.map((s) => s.chapter))].map((c) => (
-                <option key={c} value={c}>
-                  {chapterLabel(project, c)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!isShort(project) && (
+            <label className="field-label">
+              BESTEHENDES KAPITEL
+              <select
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+              >
+                {[...new Set(project.scenes.map((s) => s.chapter))].map((c) => (
+                  <option key={c} value={c}>
+                    {chapterLabel(project, c)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             className="text-button"
             onClick={() => transfer('scene')}
           >
-            Als neue Szene übernehmen
+            {usesScenes(project)
+              ? 'Als neue Szene übernehmen'
+              : 'Zur Textplanung hinzufügen'}
           </button>
-          <label className="field-label">
-            NEUES KAPITEL
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={card.title || 'Kapitelname'}
-            />
-          </label>
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => transfer('chapter')}
-          >
-            Als neues Kapitel übernehmen
-          </button>
+          {!isShort(project) && (
+            <>
+              <label className="field-label">
+                NEUES KAPITEL
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={card.title || 'Kapitelname'}
+                />
+              </label>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => transfer('chapter')}
+              >
+                Als neues Kapitel übernehmen
+              </button>
+            </>
+          )}
           {card.manuscriptSceneId && (
             <p className="muted small">
-              Die zuvor verknüpfte Szene ist nicht mehr vorhanden. Du kannst die
+              Der zuvor verknüpfte Text ist nicht mehr vorhanden. Du kannst die
               Idee erneut übernehmen.
             </p>
           )}

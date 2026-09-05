@@ -1,3 +1,4 @@
+import { isShort, usesScenes } from './project-format.ts';
 import { newScene, type Library, type Card } from './model.ts';
 import { appendToChapter } from './structure.ts';
 import { withSnapshot } from './history.ts';
@@ -14,7 +15,9 @@ export function sendIdea(
   const linked = stored?.manuscriptSceneId || card.manuscriptSceneId;
   if (linked && p.scenes.some((s) => s.id === linked))
     return { library, sceneId: linked };
-  const chapter = target.chapter.trim();
+  if (isShort(p) && target.kind === 'chapter')
+    throw Error('Kurzgeschichten haben keine Kapitel.');
+  const chapter = isShort(p) ? p.scenes[0].chapter : target.chapter.trim();
   if (!chapter) throw Error('Bitte ein Zielkapitel angeben.');
   const exists = p.scenes.some((s) => s.chapter === chapter);
   if (target.kind === 'chapter' && exists)
@@ -26,10 +29,15 @@ export function sendIdea(
     title: card.title.trim(),
     synopsis: [card.subtitle, card.text].filter(Boolean).join('\n\n'),
   };
+  const appendPlan = !usesScenes(p) && target.kind === 'scene';
+  const existing = appendPlan
+    ? p.scenes.find((s) => s.chapter === chapter)
+    : undefined;
+  const sceneId = existing?.id || scene.id;
   const updatedCard = {
     ...card,
     stage: 'Im Manuskript' as const,
-    manuscriptSceneId: scene.id,
+    manuscriptSceneId: sceneId,
   };
   const next = withSnapshot(library, p, 'Vor Übernahme einer Idee');
   return {
@@ -41,7 +49,18 @@ export function sendIdea(
               ...x,
               scenes: orderedScenes({
                 ...x,
-                scenes: appendToChapter(x.scenes, scene),
+                scenes: existing
+                  ? x.scenes.map((s) =>
+                      s.id === existing.id
+                        ? {
+                            ...s,
+                            synopsis: [s.synopsis, scene.synopsis]
+                              .filter(Boolean)
+                              .join('\n\n'),
+                          }
+                        : s,
+                    )
+                  : appendToChapter(x.scenes, scene),
               }),
               cards: x.cards.some((c) => c.id === card.id)
                 ? x.cards.map((c) => (c.id === card.id ? updatedCard : c))
@@ -51,6 +70,6 @@ export function sendIdea(
           : x,
       ),
     },
-    sceneId: scene.id,
+    sceneId,
   };
 }

@@ -1,10 +1,11 @@
+import { isShort, usesScenes } from '../core/project-format.ts';
 import {
   chapterLabel,
   chapterDetails,
   orderedScenes,
 } from '../core/chapters.ts';
 import { zipSync, strToU8 } from 'fflate';
-import { type Project } from '../core/model.ts';
+import { type Project, type Scene } from '../core/model.ts';
 import { safeName } from '../core/storage.ts';
 export const escape = (s: string) =>
   s.replace(
@@ -25,6 +26,16 @@ export const paragraphs = (s: string) =>
           .replace(/\*([^*]+)\*/g, '<em>$1</em>')}</p>`,
     )
     .join('\n');
+export function exportHeading(p: Project, s: Scene) {
+  if (isShort(p)) return p.title;
+  return [
+    chapterDetails(p, s.chapter).part,
+    chapterLabel(p, s.chapter),
+    usesScenes(p) ? s.title : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 export async function exportEpub(p: Project) {
   p = { ...p, scenes: orderedScenes(p) };
   const files: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {
@@ -39,15 +50,15 @@ export async function exportEpub(p: Project) {
     (s, i) =>
       (files[`EPUB/scene-${i}.xhtml`] = strToU8(
         xhtml(
-          s.title,
-          `<h2>${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}`,
+          exportHeading(p, s),
+          `<h1>${escape(exportHeading(p, s))}</h1>${paragraphs(s.text)}`,
         ),
       )),
   );
   files['EPUB/nav.xhtml'] = strToU8(
     xhtml(
       p.title,
-      `<nav epub:type="toc" id="toc"><h1>${escape(p.title)}</h1><ol>${p.scenes.map((s, i) => `<li><a href="scene-${i}.xhtml">${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))} · ${escape(s.title)}</a></li>`).join('')}</ol></nav>`,
+      `<nav epub:type="toc" id="toc"><h1>${escape(p.title)}</h1><ol>${p.scenes.map((s, i) => `<li><a href="scene-${i}.xhtml">${escape(exportHeading(p, s))}</a></li>`).join('')}</ol></nav>`,
     ),
   );
   files['EPUB/package.opf'] = strToU8(
@@ -73,5 +84,9 @@ export function printBook(p: Project) {
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 60000);
   };
-  frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif;color:#111}section{break-before:page}h1{font-size:26pt}p{orphans:3;widows:3}.cover{padding-top:35%;text-align:center}</style></head><body><div class="cover"><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p></div>${p.scenes.map((s) => `<section><h2>${escape([chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))}</h2><h1>${escape(s.title)}</h1>${paragraphs(s.text)}</section>`).join('')}</body></html>`;
+  if (isShort(p)) {
+    frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif}p{orphans:3;widows:3}</style></head><body><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p>${paragraphs(p.scenes[0].text)}</body></html>`;
+    return;
+  }
+  frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif;color:#111}section{break-before:page}h1{font-size:26pt}p{orphans:3;widows:3}.cover{padding-top:35%;text-align:center}</style></head><body><div class="cover"><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p></div>${p.scenes.map((s) => `<section><h1>${escape(exportHeading(p, s))}</h1>${paragraphs(s.text)}</section>`).join('')}</body></html>`;
 }
