@@ -39,6 +39,13 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.2.2
+
+- Dark Mode wird auf diesem Gerät gespeichert und beim nächsten Öffnen wiederhergestellt.
+- Neben Kapiteln und Szenen öffnet „…“ die Strukturverwaltung. Kapitel lassen sich anlegen, umbenennen und mit allen Szenen löschen. Szenen lassen sich in andere Kapitel verschieben, in ein eigenes Kapitel umwandeln oder löschen.
+- „Kapitel in eine Szene umwandeln“ fügt die Texte in Reihenfolge zusammen und verschiebt die neue Szene in ein gewähltes anderes Kapitel. Bei mehreren Szenen werden deren Details zusätzlich in den Notizen gesammelt; die vollständigen Originaldaten bleiben in der Versionssicherung.
+- Vor Strukturänderungen wird das ganze Buch als Version gesichert. Nach Löschen des letzten Inhalts bleibt eine neue leere Szene. Neue Szenen werden am Ende ihres Kapitels eingefügt; Umordnen bleibt innerhalb des Kapitels.
+
 ## Neu in 0.2
 
 - **Buchreihe:** Projekte & Export → Neues Buch → Checkbox „Dieses Buch gehört zu einer Buchreihe“. Reihentitel und Band sind auch nachträglich änderbar.

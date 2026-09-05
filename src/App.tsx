@@ -48,7 +48,6 @@ import { load, save } from './core/storage';
 import {
   newScene,
   words,
-  moveScene,
   type Project,
   type Scene,
   type Library as LibraryData,
@@ -57,10 +56,18 @@ import { CardsView, TimelineView } from './modules/planning';
 import { Thesaurus } from './modules/thesaurus';
 import { useUpdates, UpdateNotice } from './modules/updates';
 import { useEntities, EntityPanel } from './modules/entity-panel';
-import { reviseScene, withSnapshot } from './core/history';
+import { reviseScene } from './core/history';
 import { Versions } from './modules/versions';
 import { seriesLabel } from './modules/series';
 import { ProjectDialog } from './modules/projects';
+import { readDarkMode, storeDarkMode } from './core/preferences';
+import {
+  reorderInChapter,
+  appendToChapter,
+  changeStructure,
+  groupScenes,
+} from './core/structure';
+import { StructureDialog, type StructureSelection } from './modules/structure';
 const statuses = ['Idee', 'Entwurf', 'Überarbeitung', 'Fertig'];
 export function Choice({
   value,
@@ -119,7 +126,8 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [projectDialog, setProjectDialog] = useState(false);
   const [settings, setSettings] = useState(false);
   const [versionDialog, setVersionDialog] = useState(false);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(readDarkMode);
+  const [structure, setStructure] = useState<StructureSelection | null>(null);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('details');
   const [selection, setSelection] = useState({ start: 0, end: 0, word: '' });
@@ -135,6 +143,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const findings = useMemo(() => analyze(deferred), [deferred]);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    storeDarkMode(dark);
   }, [dark]);
   useEffect(() => {
     const fn = () => setOffline(!navigator.onLine);
@@ -195,19 +204,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   };
   function addScene() {
     const n = newScene(s.chapter);
-    update((p) => ({ ...p, scenes: [...p.scenes, n] }));
+    update((p) => ({ ...p, scenes: appendToChapter(p.scenes, n) }));
     setSelected(n.id);
     setView('write');
-  }
-  function snapshot() {
-    setLibrary((l) =>
-      withSnapshot(
-        l,
-        l.projects.find((x) => x.id === l.active)!,
-        `Vor Entfernen: ${s.title}`,
-        'delete',
-      ),
-    );
   }
   function selectRange(start: number, end: number) {
     setView('write');
@@ -264,9 +263,22 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           <div className="sidebar-divider" />
           <div className="section-label">
             <span>MANUSKRIPT</span>
-            <button aria-label="Szene hinzufügen" onClick={addScene}>
-              <Plus size={17} />
-            </button>
+            <div className="manuscript-add">
+              <button
+                aria-label="Kapitel hinzufügen"
+                title="Kapitel hinzufügen"
+                onClick={() => setStructure({ kind: 'new', id: '' })}
+              >
+                <BookOpen size={16} />
+              </button>
+              <button
+                aria-label="Szene hinzufügen"
+                title="Szene hinzufügen"
+                onClick={addScene}
+              >
+                <Plus size={17} />
+              </button>
+            </div>
           </div>
           <label className="search-box">
             <Search size={15} />
@@ -278,7 +290,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             />
           </label>
           <div className="scene-list">
-            {p.scenes
+            {groupScenes(p.scenes)
               .filter((x) =>
                 (x.title + ' ' + x.text + ' ' + x.chapter)
                   .toLowerCase()
@@ -287,16 +299,37 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               .map((x, i, a) => (
                 <div key={x.id}>
                   {(i === 0 || a[i - 1].chapter !== x.chapter) && (
-                    <div className="chapter-label">{x.chapter}</div>
+                    <div className="chapter-label">
+                      <span>{x.chapter || '(Unbenannt)'}</span>
+                      <button
+                        aria-label={`Kapitel ${x.chapter} bearbeiten`}
+                        title="Kapitel bearbeiten"
+                        onClick={() =>
+                          setStructure({ kind: 'chapter', id: x.chapter })
+                        }
+                      >
+                        <MoreHorizontal size={16} />
+                      </button>
+                    </div>
                   )}
-                  <SceneButton
-                    scene={x}
-                    active={s.id === x.id && view === 'write'}
-                    onClick={() => {
-                      setSelected(x.id);
-                      setView('write');
-                    }}
-                  />
+                  <div className="scene-nav-row">
+                    <SceneButton
+                      scene={x}
+                      active={s.id === x.id && view === 'write'}
+                      onClick={() => {
+                        setSelected(x.id);
+                        setView('write');
+                      }}
+                    />
+                    <button
+                      className="scene-options"
+                      aria-label={`Szene ${x.title} verwalten`}
+                      title="Szene verwalten"
+                      onClick={() => setStructure({ kind: 'scene', id: x.id })}
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             {query &&
@@ -566,13 +599,25 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         }
                       />
                     </div>
-                    <label className="field-label">
-                      KAPITEL
-                      <input
-                        value={s.chapter}
-                        onChange={(e) => patch({ chapter: e.target.value })}
-                      />
-                    </label>
+                    <div className="field-label">
+                      KAPITEL<span>{s.chapter}</span>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          setStructure({ kind: 'scene', id: s.id })
+                        }
+                      >
+                        Szene verschieben / verwalten
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          setStructure({ kind: 'chapter', id: s.chapter })
+                        }
+                      >
+                        Kapitel verwalten
+                      </button>
+                    </div>
                     <label className="field-label">
                       WAS PASSIERT?
                       <textarea
@@ -607,11 +652,14 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     </label>
                     <div className="reorder">
                       <button
-                        disabled={p.scenes[0].id === s.id}
+                        disabled={
+                          p.scenes.filter((x) => x.chapter === s.chapter)[0]
+                            .id === s.id
+                        }
                         onClick={() =>
                           update((p) => ({
                             ...p,
-                            scenes: moveScene(p.scenes, s.id, -1),
+                            scenes: reorderInChapter(p.scenes, s.id, -1),
                           }))
                         }
                       >
@@ -619,11 +667,14 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         Nach vorn
                       </button>
                       <button
-                        disabled={p.scenes.at(-1)?.id === s.id}
+                        disabled={
+                          p.scenes.filter((x) => x.chapter === s.chapter).at(-1)
+                            ?.id === s.id
+                        }
                         onClick={() =>
                           update((p) => ({
                             ...p,
-                            scenes: moveScene(p.scenes, s.id, 1),
+                            scenes: reorderInChapter(p.scenes, s.id, 1),
                           }))
                         }
                       >
@@ -631,21 +682,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         Nach hinten
                       </button>
                     </div>
-                    <button
-                      className="text-button"
-                      disabled={p.scenes.length === 1}
-                      onClick={() => {
-                        snapshot();
-                        const remaining = p.scenes.filter((x) => x.id !== s.id);
-                        update((p) => ({ ...p, scenes: remaining }));
-                        setSelected(remaining[0].id);
-                        setNotice(
-                          'Szene entfernt. Über die gesicherte Version kannst du sie wiederherstellen.',
-                        );
-                      }}
-                    >
-                      Szene entfernen (mit Sicherung)
-                    </button>
                   </div>
                 ) : (
                   <div className="inspector-body">
@@ -694,6 +730,30 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           </div>
         </main>
       </div>
+      {structure && (
+        <StructureDialog
+          key={p.id + structure.kind + structure.id}
+          project={p}
+          selection={structure}
+          close={() => setStructure(null)}
+          apply={(action) => {
+            const next = changeStructure(library, action);
+            setLibrary(next);
+            const scenes = next.projects.find(
+              (x) => x.id === next.active,
+            )!.scenes;
+            setView('write');
+            if (action.type === 'newChapter') setSelected(scenes.at(-1)!.id);
+            else if (action.type === 'move' || action.type === 'promote')
+              setSelected(action.sceneId);
+            else if (!scenes.some((x) => x.id === selected))
+              setSelected(scenes[0].id);
+            setNotice(
+              'Kapitelstruktur geändert. Der vorherige Stand ist als Version gesichert.',
+            );
+          }}
+        />
+      )}
       <ProjectDialog
         open={projectDialog}
         setOpen={setProjectDialog}

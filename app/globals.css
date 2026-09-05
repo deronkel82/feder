@@ -1807,3 +1807,60 @@ small,
     max-height: 28dvh;
   }
 }
+
+.manuscript-add {
+  display: flex;
+  gap: 4px;
+}
+.chapter-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: space-between;
+}
+.chapter-label > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.chapter-label button,
+.scene-options {
+  flex-shrink: 0;
+  padding: 7px;
+  border-radius: 5px;
+  color: var(--muted-foreground);
+}
+.scene-nav-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.scene-nav-row .scene-button {
+  flex: 1;
+  min-width: 0;
+}
+.structure-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.structure-form select {
+  width: 100%;
+  min-width: 0;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  padding: 10px;
+  border-radius: 6px;
+  font: inherit;
+}
+.structure-warning {
+  padding: 12px;
+  border: 1px solid var(--input);
+  border-radius: 6px;
+}
+.structure-dialog {
+  max-height: 85dvh;
+  overflow-y: auto;
+}

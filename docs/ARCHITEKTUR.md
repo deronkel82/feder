@@ -9,6 +9,8 @@ Feder ist eine statisch ausgelieferte React/TypeScript-PWA. Kein Backend, keine 
 - `src/modules/analysis.ts`: pure, unabhängig testbare Regeln mit Textpositionen.
 - `src/modules/thesaurus.tsx`: lokal geladenes, austauschbares Wörterbuch. Laden erst bei erster Suche; PWA-Cache hält Daten offline bereit.
 - `src/modules/publishing.ts`: HTML-escaping, EPUB-3-ZIP und Druckansicht.
+- `src/core/structure.ts` und `src/modules/structure.tsx`: Kapitelverwaltung auf dem bestehenden Szenenschema; Strukturänderungen mit vorherigem Snapshot. Kapitel sind benannte Gruppen; Namen innerhalb eines Buchs sind eindeutig.
+- `src/core/preferences.ts`: Dark-Mode-Geräteeinstellung, separat von Manuskripten.
 - `src/modules/projects.tsx` und `series.tsx`: Bücher, Buchreihen, Import/Export.
 - `src/core/history.ts` und `src/modules/versions.tsx`: vollständige nummerierte Snapshots, automatische Überarbeitungsstände, Vergleich und Wiederherstellung.
 - `src/modules/entities.ts`, `entities.worker.ts`, `entity-panel.tsx`: austauschbare lokale Erkennungsregeln in einem Web Worker, verzögert nach Texteingaben; bestätigte Vorschläge nutzen normale Romanwelt-Karten.
