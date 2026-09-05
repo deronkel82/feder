@@ -354,17 +354,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           />
           <div className="sidebar-bottom">
             <WritingProgress project={p} />
-            <button
-              className="footer-button"
-              onClick={() => setProjectDialog(true)}
-            >
-              <Download size={17} />
-              Projekte & Export
-            </button>
-            <button className="footer-button" onClick={() => setSettings(true)}>
-              <Settings2 size={17} />
-              Module & Einstellungen
-            </button>
           </div>
         </Sidebar>
         <main className="main-area">
@@ -393,6 +382,20 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       : 'Speichert …'}
                 </span>
               </span>
+              <button
+                title="Projekte & Export"
+                aria-label="Projekte & Export"
+                onClick={() => setProjectDialog(true)}
+              >
+                <Download size={18} />
+              </button>
+              <button
+                title="Module & Einstellungen"
+                aria-label="Module & Einstellungen"
+                onClick={() => setSettings(true)}
+              >
+                <Settings2 size={18} />
+              </button>
               <UpdateNotice updates={updates} />
               <button
                 title="Darstellung wechseln"

@@ -2038,3 +2038,16 @@ small,
   background: var(--accent);
   color: var(--accent-foreground);
 }
+
+@media (max-width: 600px) {
+  .topbar .breadcrumb > span,
+  .topbar .breadcrumb > svg {
+    display: none;
+  }
+  .topbar .breadcrumb {
+    flex-shrink: 0;
+  }
+  .topbar .top-actions {
+    gap: 2px;
+  }
+}
