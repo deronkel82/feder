@@ -10,7 +10,7 @@ function database() {
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
     r.onblocked = () =>
-      reject(Error('Datenbank wird von einem anderen Fenster blockiert.'));
+      reject(Error('Ein anderes Fenster blockiert die Datenbank.'));
   }));
 }
 export async function load(): Promise<{
@@ -19,28 +19,52 @@ export async function load(): Promise<{
 }> {
   try {
     const db = await database();
-    const record = await new Promise<
-      { library: Library; revision: number } | undefined
-    >((resolve, reject) => {
-      const r = db.transaction('workspace').objectStore('workspace').get(KEY);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction('workspace', 'readwrite');
+      const store = tx.objectStore('workspace');
+      const r = store.get(KEY);
+      let library: Library;
+      let nextRevision = 0;
+      r.onsuccess = () => {
+        try {
+          const record = r.result;
+          const legacy = record ? null : localStorage.getItem(KEY);
+          const raw = record?.library || (legacy ? JSON.parse(legacy) : null);
+          library = raw ? validateLibrary(raw) : seed();
+          nextRevision = record?.revision || 0;
+          if (raw && raw.version !== library.version) {
+            store.put(
+              {
+                date: new Date().toISOString(),
+                reason: 'Vor Datenumstellung',
+                library: raw,
+              },
+              'backup:migration:' + raw.version,
+            );
+            nextRevision++;
+            store.put({ library, revision: nextRevision }, KEY);
+          }
+        } catch {
+          tx.abort();
+        }
+      };
+      tx.oncomplete = () => {
+        revision = nextRevision;
+        resolve({ library: library!, error: null });
+      };
+      tx.onabort = () =>
+        reject(
+          Error(
+            'Datenumstellung nicht möglich. Die Originaldaten bleiben unverändert.',
+          ),
+        );
+      tx.onerror = () => reject(tx.error);
     });
-    revision = record?.revision || 0;
-    const old = localStorage.getItem(KEY);
-    return {
-      library: record
-        ? validateLibrary(record.library)
-        : old
-          ? validateLibrary(JSON.parse(old))
-          : seed(),
-      error: null,
-    };
   } catch {
     return {
       library: seed(),
       error:
-        'Gespeicherte Daten konnten nicht gelesen werden. Automatisches Speichern ist angehalten. Bitte öffne das ursprüngliche Browserprofil oder importiere eine Sicherung.',
+        'Deine Daten konnten nicht sicher geöffnet oder umgestellt werden. Speichern ist angehalten. Unter „Projekte & Export“ kannst du Originaldaten und Update-Sicherungen herunterladen. Lösche keine Browserdaten.',
     };
   }
 }
@@ -69,8 +93,8 @@ export function save(library: Library) {
         reject(
           Error(
             conflict
-              ? 'Ein anderes Fenster hat dieses Projekt geändert. Exportiere deine Arbeit und lade die App neu, bevor du weiterarbeitest.'
-              : 'Speichern fehlgeschlagen. Bitte exportiere eine Sicherung, bevor du die App schließt.',
+              ? 'Ein anderes Fenster hat Daten geändert. Sichere deine Arbeit als Datei und lade Feder neu.'
+              : 'Speichern fehlgeschlagen. Bitte exportiere eine Sicherung.',
           ),
         );
       tx.onerror = () =>
@@ -81,6 +105,63 @@ export function save(library: Library) {
   });
   queue = job.catch(() => {});
   return job;
+}
+export async function backupForUpdate(library: Library) {
+  await save(library);
+  await queue;
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction('workspace', 'readwrite');
+    const store = tx.objectStore('workspace');
+    const r = store.get(KEY);
+    r.onsuccess = () => {
+      if (r.result?.revision !== revision) {
+        tx.abort();
+        return;
+      }
+      store.put(
+        {
+          date: new Date().toISOString(),
+          reason: 'Vor App-Update',
+          library: r.result.library,
+        },
+        'backup:update',
+      );
+    };
+    tx.oncomplete = () => resolve();
+    tx.onabort = () =>
+      reject(
+        Error(
+          'Update-Sicherung fehlgeschlagen. Die aktuelle App bleibt geöffnet.',
+        ),
+      );
+    tx.onerror = () => reject(tx.error);
+  });
+}
+export async function recoveryBackups() {
+  const db = await database();
+  return new Promise<
+    Array<{ key: string; date: string; reason: string; library: unknown }>
+  >((resolve, reject) => {
+    const result: Array<{
+      key: string;
+      date: string;
+      reason: string;
+      library: unknown;
+    }> = [];
+    const r = db.transaction('workspace').objectStore('workspace').openCursor();
+    r.onsuccess = () => {
+      const c = r.result;
+      if (!c) {
+        resolve(result);
+        return;
+      }
+      if (typeof c.key === 'string' && c.key.startsWith('backup:'))
+        result.push({ key: c.key, ...c.value });
+      c.continue();
+    };
+    r.onerror = () => reject(r.error);
+  });
 }
 export async function rawBackup() {
   const db = await database();

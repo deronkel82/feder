@@ -46,7 +46,6 @@ import { modules } from './modules/registry';
 import { analyze } from './modules/analysis';
 import { load, save } from './core/storage';
 import {
-  uid,
   newScene,
   words,
   moveScene,
@@ -56,6 +55,11 @@ import {
 } from './core/model';
 import { CardsView, TimelineView } from './modules/planning';
 import { Thesaurus } from './modules/thesaurus';
+import { useUpdates, UpdateNotice } from './modules/updates';
+import { useEntities, EntityPanel } from './modules/entity-panel';
+import { reviseScene, withSnapshot } from './core/history';
+import { Versions } from './modules/versions';
+import { seriesLabel } from './modules/series';
 import { ProjectDialog } from './modules/projects';
 const statuses = ['Idee', 'Entwurf', 'Überarbeitung', 'Fertig'];
 export function Choice({
@@ -114,6 +118,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [focus, setFocus] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [versionDialog, setVersionDialog] = useState(false);
   const [dark, setDark] = useState(false);
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState('details');
@@ -122,6 +127,8 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [notice, setNotice] = useState('');
   const editor = useRef<HTMLTextAreaElement>(null);
   const p = library.projects.find((p) => p.id === library.active)!;
+  const updates = useUpdates(library, saveError);
+  const recognition = useEntities(p);
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
   const total = p.scenes.reduce((n, s) => n + words(s.text), 0);
   const deferred = useDeferredValue(s.text);
@@ -181,10 +188,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
     }));
   }
   const patch = (v: Partial<Scene>) =>
-    update((p) => ({
-      ...p,
-      scenes: p.scenes.map((x) => (x.id === s.id ? { ...x, ...v } : x)),
-    }));
+    setLibrary((l) => reviseScene(l, s.id, v));
   const go = (id: string) => {
     setView(id);
     setFocus(false);
@@ -196,18 +200,14 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
     setView('write');
   }
   function snapshot() {
-    setLibrary((l) => ({
-      ...l,
-      snapshots: [
-        {
-          id: uid(),
-          date: new Date().toISOString(),
-          project: structuredClone(p),
-        },
-        ...l.snapshots,
-      ].slice(0, 50),
-    }));
-    setNotice('Version gesichert. Du findest sie unter Projekte & Export.');
+    setLibrary((l) =>
+      withSnapshot(
+        l,
+        l.projects.find((x) => x.id === l.active)!,
+        `Vor Entfernen: ${s.title}`,
+        'delete',
+      ),
+    );
   }
   function selectRange(start: number, end: number) {
     setView('write');
@@ -232,7 +232,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   }
   return (
     <SidebarProvider open={sideOpen && !focus} onOpenChange={setSideOpen}>
-      <div className={`app-shell ${focus ? 'focus-mode' : ''}`}>
+      <div
+        inert={updates.busy}
+        className={`app-shell ${focus ? 'focus-mode' : ''}`}
+      >
         <Sidebar className="app-sidebar">
           <div className="brand">
             <span className="brand-icon">
@@ -253,6 +256,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             <span>
               <small>DEIN PROJEKT</small>
               <strong>{p.title}</strong>
+              {p.series.enabled && <small>{seriesLabel(p.series)}</small>}
             </span>
             <MoreHorizontal size={18} />
           </button>
@@ -378,6 +382,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               {saveError}
             </div>
           )}
+          <UpdateNotice updates={updates} />
           <div className="work-area">
             {view === 'write' ? (
               <div className="editor-area">
@@ -400,7 +405,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     <span className="toolbar-divider" />
                     <span className="font-label">Literarisch</span>
                   </div>
-                  <button className="text-button" onClick={snapshot}>
+                  <button
+                    className="text-button"
+                    onClick={() => setVersionDialog(true)}
+                  >
                     <Undo2 size={15} />
                     Version sichern
                   </button>
@@ -504,18 +512,23 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 </div>
               </div>
             ) : (
-              <CardsView
-                key={view}
-                kind={
-                  view === 'board'
-                    ? 'Idee'
-                    : view === 'research'
-                      ? 'Recherche'
-                      : 'Figur'
-                }
-                project={p}
-                update={update}
-              />
+              <div className="world-layout">
+                <CardsView
+                  key={view}
+                  kind={
+                    view === 'board'
+                      ? 'Idee'
+                      : view === 'research'
+                        ? 'Recherche'
+                        : 'Figur'
+                  }
+                  project={p}
+                  update={update}
+                />
+                {view === 'world' && (
+                  <EntityPanel {...recognition} project={p} update={update} />
+                )}
+              </div>
             )}{' '}
             {view === 'write' && panel && !focus && (
               <aside className="inspector">
@@ -658,6 +671,16 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     />
                   </div>
                 )}
+                {p.enabled.includes('world') && (
+                  <EntityPanel
+                    entities={recognition.entities.filter((e) =>
+                      e.sceneIds.includes(s.id),
+                    )}
+                    error={recognition.error}
+                    project={p}
+                    update={update}
+                  />
+                )}
                 <div className="inspector-note">
                   <Feather size={20} />
                   <p>
@@ -684,6 +707,20 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         }}
         error={saveError}
       />
+      <Dialog open={versionDialog} onOpenChange={setVersionDialog}>
+        <DialogContent className="project-dialog">
+          <DialogTitle>Deine Überarbeitungen</DialogTitle>
+          <DialogDescription>
+            Benannte Stände sichern und frühere Fassungen vergleichen.
+          </DialogDescription>
+          <Versions
+            library={library}
+            setLibrary={setLibrary}
+            project={p}
+            select={setSelected}
+          />
+        </DialogContent>
+      </Dialog>
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent className="settings-dialog">
           <DialogTitle>Dein Atelier, deine Werkzeuge.</DialogTitle>

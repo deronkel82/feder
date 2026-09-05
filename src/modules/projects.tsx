@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Download, Upload, BookOpen, History } from 'lucide-react';
+import { Plus, Download, Upload, BookOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,14 @@ import {
   type Project,
   type Library,
 } from '../core/model';
-import { download, safeName, rawBackup } from '../core/storage';
+import {
+  download,
+  safeName,
+  rawBackup,
+  recoveryBackups,
+} from '../core/storage';
+import { SeriesFields, seriesLabel } from './series';
+import { Versions } from './versions';
 export function ProjectDialog({
   open,
   setOpen,
@@ -34,6 +41,11 @@ export function ProjectDialog({
   error: string | null;
 }) {
   const [message, setMessage] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState(() => newProject(''));
+  const [recoveries, setRecoveries] = useState<
+    Awaited<ReturnType<typeof recoveryBackups>>
+  >([]);
   async function importFile(file?: File) {
     if (!file) return;
     try {
@@ -68,7 +80,7 @@ export function ProjectDialog({
           ...l,
           projects: [...l.projects, ...projects],
           active: projects[0].id,
-          snapshots: [...snapshots, ...l.snapshots].slice(0, 50),
+          snapshots: [...snapshots, ...l.snapshots],
         }));
         select(projects[0].scenes[0].id);
       }
@@ -106,27 +118,59 @@ export function ProjectDialog({
               <BookOpen size={20} />
               <span>
                 {p.title}
-                <small>{p.scenes.length} Szenen</small>
+                <small>
+                  {p.scenes.length} Szenen{' '}
+                  {p.series.enabled ? ' · ' + seriesLabel(p.series) : ''}
+                </small>
               </span>
               {p.id === library.active && <small>Aktiv</small>}
             </button>
           ))}
         </div>
-        <button
-          className="text-button"
-          onClick={() => {
-            const p = newProject();
-            setLibrary((l) => ({
-              ...l,
-              projects: [...l.projects, p],
-              active: p.id,
-            }));
-            select(p.scenes[0].id);
-          }}
-        >
+        <button className="text-button" onClick={() => setCreating(true)}>
           <Plus size={16} />
           Neues Buch
         </button>
+        {creating && (
+          <form
+            className="new-book-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setLibrary((l) => ({
+                ...l,
+                projects: [...l.projects, draft],
+                active: draft.id,
+              }));
+              select(draft.scenes[0].id);
+              setCreating(false);
+              setDraft(newProject(''));
+            }}
+          >
+            <h2>Neues Buch anlegen</h2>
+            <label className="field-label">
+              BUCHTITEL
+              <input
+                required
+                value={draft.title}
+                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              />
+            </label>
+            <SeriesFields
+              value={draft.series}
+              onChange={(series) => setDraft({ ...draft, series })}
+              required
+            />
+            <div className="form-actions">
+              <button className="primary-button" type="submit">
+                Buch anlegen
+              </button>
+              <button type="button" onClick={() => setCreating(false)}>
+                Abbrechen
+              </button>
+            </div>
+          </form>
+        )}
+
         <div className="project-fields">
           <label className="field-label">
             BUCHTITEL
@@ -163,6 +207,10 @@ export function ProjectDialog({
             />
           </label>
         </div>
+        <SeriesFields
+          value={project.series}
+          onChange={(series) => update((p) => ({ ...p, series }))}
+        />
         <h2 className="dialog-section">Mitnehmen & sichern</h2>
         <div className="export-grid">
           <button
@@ -248,51 +296,44 @@ export function ProjectDialog({
             Gespeicherte Rohdaten retten
           </button>
         )}
-        <h2 className="dialog-section">
-          <History size={17} />
-          Gesicherte Versionen
-        </h2>
-        <p className="muted small">
-          Beim Wiederherstellen wird auch dein aktueller Stand gesichert.
-        </p>
-        <div className="versions">
-          {library.snapshots
-            .filter((s) => s.project.id === project.id)
-            .map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setLibrary((l) => ({
-                    ...l,
-                    projects: l.projects.map((p) =>
-                      p.id === project.id ? structuredClone(s.project) : p,
-                    ),
-                    snapshots: [
-                      {
-                        id: uid(),
-                        date: new Date().toISOString(),
-                        project: structuredClone(project),
-                      },
-                      ...l.snapshots,
-                    ].slice(0, 50),
-                  }));
-                  select(s.project.scenes[0].id);
-                  setMessage(
-                    'Version wiederhergestellt. Der vorherige Stand bleibt gesichert.',
-                  );
-                }}
-              >
-                {new Date(s.date).toLocaleString('de')}
-                <span>Wiederherstellen</span>
-              </button>
-            ))}
-          {!library.snapshots.some((s) => s.project.id === project.id) && (
-            <p className="muted small">
-              Noch keine Version. Nutze „Version sichern“ über deinem
-              Manuskript.
-            </p>
-          )}
-        </div>
+        <Versions
+          library={library}
+          setLibrary={setLibrary}
+          project={project}
+          select={select}
+        />
+        <button
+          className="text-button"
+          onClick={async () => {
+            try {
+              const list = await recoveryBackups();
+              setRecoveries(list);
+              setMessage(
+                list.length
+                  ? 'Sicherungen vor Updates / Datenumstellungen:'
+                  : 'Noch keine Update-Sicherung vorhanden.',
+              );
+            } catch {
+              setMessage('Sicherungen derzeit nicht lesbar.');
+            }
+          }}
+        >
+          Update-Sicherungen anzeigen
+        </button>
+        {recoveries.map((r) => (
+          <button
+            className="text-button"
+            key={r.key}
+            onClick={() =>
+              download(
+                JSON.stringify(r.library, null, 2),
+                'Feder-Update-Sicherung.json',
+              )
+            }
+          >
+            {r.reason} · {new Date(r.date).toLocaleString('de')} · Herunterladen
+          </button>
+        ))}
         {message && <output className="dialog-message">{message}</output>}
       </DialogContent>
     </Dialog>

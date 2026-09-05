@@ -19,6 +19,7 @@ void test('IndexedDB roundtrip, snapshot persistence and competing windows', asy
   await save(first.library);
   stale.library.projects[0].title = 'Veralteter Stand';
   await assert.rejects(peer.save(stale.library), /anderes Fenster/);
+  await assert.rejects(peer.backupForUpdate(stale.library), /anderes Fenster/);
   const raw = JSON.parse(await rawBackup());
   assert.equal(raw.projects[0].title, 'Aktueller Stand');
 });

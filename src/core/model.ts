@@ -17,7 +17,10 @@ export type Card = {
   kind: 'Figur' | 'Ort' | 'Recherche' | 'Idee';
   stage: 'Sammlung' | 'Entwicklung' | 'Im Manuskript';
 };
+export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  series: Series;
+  dismissedEntities: string[];
   id: string;
   title: string;
   author: string;
@@ -27,9 +30,17 @@ export type Project = {
   enabled: string[];
   updated: string;
 };
-export type Snapshot = { id: string; date: string; project: Project };
+export type Snapshot = {
+  id: string;
+  date: string;
+  project: Project;
+  label?: string;
+  number?: number;
+  reason?: 'manual' | 'revision' | 'restore' | 'delete';
+  sceneId?: string;
+};
 export type Library = {
-  version: 1;
+  version: 2;
   projects: Project[];
   active: string;
   snapshots: Snapshot[];
@@ -53,6 +64,8 @@ export function newProject(title = 'Mein neues Buch'): Project {
     id: uid(),
     title,
     author: '',
+    series: { enabled: false, title: '', volume: '' },
+    dismissedEntities: [],
     target: 50000,
     scenes: [newScene()],
     cards: [],
@@ -113,7 +126,7 @@ export function seed(): Library {
       stage: 'Sammlung',
     },
   ];
-  return { version: 1, projects: [p], active: p.id, snapshots: [] };
+  return { version: 2, projects: [p], active: p.id, snapshots: [] };
 }
 export function words(text: string): number {
   return (text.match(/[\p{L}\p{N}]+(?:[’'-][\p{L}\p{N}]+)*/gu) || []).length;
@@ -127,11 +140,18 @@ export function moveScene(scenes: Scene[], id: string, delta: number) {
   return next;
 }
 export function validateLibrary(data: unknown): Library {
-  const d = data as Library;
+  const source = data as { version?: number };
+  if (!source || ![1, 2].includes(source.version!))
+    throw Error(
+      'Unbekannte Datenversion. Bitte eine passende Feder-Version verwenden.',
+    );
+  const d = structuredClone(data) as Library;
+  const legacy = source.version === 1;
+  if (legacy) d.version = 2;
   const str = (v: unknown) => typeof v === 'string';
   if (
     !d ||
-    d.version !== 1 ||
+    d.version !== 2 ||
     !Array.isArray(d.projects) ||
     !d.projects.length ||
     !Array.isArray(d.snapshots)
@@ -154,6 +174,19 @@ export function validateLibrary(data: unknown): Library {
       !p.enabled.every(str)
     )
       throw Error('Ungültiges Projekt.');
+    if (legacy) {
+      p.series = { enabled: false, title: '', volume: '' };
+      p.dismissedEntities = [];
+    }
+    if (
+      !p.series ||
+      typeof p.series.enabled !== 'boolean' ||
+      !str(p.series.title) ||
+      !str(p.series.volume) ||
+      !Array.isArray(p.dismissedEntities) ||
+      !p.dismissedEntities.every(str)
+    )
+      throw Error('Ungültige Reihen- oder Erkennungsdaten.');
     ids.add(p.id);
     const sids = new Set();
     for (const s of p.scenes) {
@@ -188,15 +221,19 @@ export function validateLibrary(data: unknown): Library {
     }
   }
   if (!ids.has(d.active)) throw Error('Aktives Projekt fehlt.');
-  if (d.snapshots.length > 200) throw Error('Zu viele Versionen.');
+
   for (const s of d.snapshots) {
     if (!s || !str(s.id) || !str(s.date)) throw Error('Ungültige Version.');
-    validateLibrary({
-      version: 1,
+    s.project = validateLibrary({
+      version: legacy ? 1 : 2,
       projects: [s.project],
       active: s.project?.id,
       snapshots: [],
-    });
+    }).projects[0];
+    if (s.label !== undefined && !str(s.label))
+      throw Error('Ungültiger Versionsname.');
+    if (s.number !== undefined && (!Number.isInteger(s.number) || s.number < 1))
+      throw Error('Ungültige Versionsnummer.');
   }
   return d;
 }
