@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { RefreshCw } from 'lucide-react';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverTitle,
+  PopoverDescription,
+} from '@/components/ui/popover';
 import { backupForUpdate } from '../core/storage';
 import type { Library } from '../core/model';
 export function useUpdates(library: Library, error: string | null) {
@@ -132,23 +140,54 @@ export function UpdateNotice({
 }) {
   return (
     <>
-      <div className="update-controls">
-        <span>
-          Feder 0.2 ·{' '}
-          {updates.waiting ? 'Neue Version verfügbar' : 'Dein Schreibatelier'}
-        </span>
-        <button disabled={updates.busy} onClick={() => void updates.check()}>
-          Updates prüfen
-        </button>
-        {updates.waiting && (
-          <button disabled={updates.busy} onClick={() => void updates.apply()}>
-            Jetzt aktualisieren
-          </button>
-        )}
-      </div>
-      {updates.message && (
-        <output className="update-message">{updates.message}</output>
-      )}
+      <Popover>
+        <PopoverTrigger
+          className="update-trigger"
+          disabled={updates.busy}
+          title={
+            updates.waiting ? 'Neue Version verfügbar' : 'Version und Updates'
+          }
+          aria-label={
+            updates.waiting
+              ? 'Neue Version verfügbar – Updates öffnen'
+              : 'Version und Updates öffnen'
+          }
+        >
+          <RefreshCw size={17} />
+          <span className="update-version">0.2.1</span>
+          {updates.waiting && <span className="update-dot" />}
+        </PopoverTrigger>
+        <PopoverContent align="end" sideOffset={10} className="update-popover">
+          <PopoverTitle>Feder 0.2.1</PopoverTitle>
+          <PopoverDescription>
+            {updates.waiting
+              ? 'Eine neue Version steht bereit.'
+              : 'Updates werden automatisch im Hintergrund gesucht.'}
+          </PopoverDescription>
+          <div className="update-controls">
+            <button
+              disabled={updates.busy}
+              onClick={() => void updates.check()}
+            >
+              Updates prüfen
+            </button>
+            {updates.waiting && (
+              <button
+                className="primary-button"
+                disabled={updates.busy}
+                onClick={() => void updates.apply()}
+              >
+                Jetzt aktualisieren
+              </button>
+            )}
+          </div>
+          {updates.message && (
+            <output className="update-message" aria-live="polite">
+              {updates.message}
+            </output>
+          )}
+        </PopoverContent>
+      </Popover>
       {updates.busy &&
         createPortal(
           <div className="update-shield" role="alert">

@@ -1562,31 +1562,55 @@ small,
 .text-button {
   font-size: 14px;
 }
-.update-controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 8px 22px;
-  background: var(--accent);
-  font-size: 12px;
+.top-actions {
   flex-shrink: 0;
 }
-.update-controls span {
-  margin-right: auto;
+.update-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+  min-height: 34px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.update-dot {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px var(--card);
+}
+.update-popover {
+  padding: 16px;
+  max-width: calc(100vw - 24px);
+}
+.update-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 5px;
 }
 .update-controls button {
   border: 1px solid var(--input);
-  border-radius: 5px;
-  padding: 6px 10px;
-  background: var(--card);
+  border-radius: 6px;
+  padding: 9px 12px;
   font-size: 13px;
 }
 .update-message {
-  padding: 8px 22px;
-  font-size: 13px;
-  background: var(--accent);
   display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+@media (max-width: 1000px) {
+  .update-version {
+    display: none;
+  }
 }
 .update-shield {
   position: fixed;
@@ -1778,9 +1802,6 @@ small,
   }
   .version-name {
     flex-direction: column;
-  }
-  .update-controls {
-    padding: 7px 13px;
   }
   .version-comparison pre {
     max-height: 28dvh;

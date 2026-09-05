@@ -353,6 +353,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       : 'Speichert …'}
                 </span>
               </span>
+              <UpdateNotice updates={updates} />
               <button
                 title="Darstellung wechseln"
                 aria-label="Darstellung wechseln"
@@ -382,7 +383,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               {saveError}
             </div>
           )}
-          <UpdateNotice updates={updates} />
           <div className="work-area">
             {view === 'write' ? (
               <div className="editor-area">
