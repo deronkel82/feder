@@ -1,3 +1,4 @@
+import { ProjectCover } from './modules/covers';
 import { isShort, usesScenes } from './core/project-format';
 import { WritingProgress } from './modules/writing-progress';
 import { ManuscriptTree } from './modules/manuscript-tree';
@@ -9,13 +10,11 @@ import {
   Plus,
   Search,
   Settings2,
-  Download,
   Focus,
   PanelRight,
   Check,
   ArrowUp,
   ArrowDown,
-  MoreHorizontal,
   BookOpen,
   ChevronRight,
   ArrowLeft,
@@ -61,7 +60,6 @@ import { useUpdates, UpdateNotice } from './modules/updates';
 import { useEntities, EntityPanel } from './modules/entity-panel';
 import { reviseScene } from './core/history';
 import { Versions } from './modules/versions';
-import { seriesLabel } from './modules/series';
 import { ProjectDialog } from './modules/projects';
 import { readDarkMode, storeDarkMode } from './core/preferences';
 import {
@@ -261,22 +259,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             <span className="edition">SCHREIBATELIER</span>
           </div>
           <button
-            className="project-picker"
-            onClick={() => setProjectDialog(true)}
-          >
-            <span className="book-cover">
-              <BookOpen size={22} />
-            </span>
-            <span>
-              <small>DEIN PROJEKT</small>
-              <strong>{p.title}</strong>
-              {!isShort(p) && p.series.enabled && (
-                <small>{seriesLabel(p.series)}</small>
-              )}
-            </span>
-            <MoreHorizontal size={18} />
-          </button>
-          <button
             className="module-collapse"
             aria-expanded={modulesOpen}
             onClick={() => {
@@ -383,11 +365,15 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 </span>
               </span>
               <button
-                title="Projekte & Export"
-                aria-label="Projekte & Export"
+                className="top-project-picker"
+                title={`Projekte & Export – ${p.title}`}
+                aria-label={`Projekte & Export öffnen, aktuell: ${p.title}`}
                 onClick={() => setProjectDialog(true)}
               >
-                <Download size={18} />
+                <ProjectCover project={p} className="toolbar-cover" />
+                <span className="top-project-title">
+                  {p.title || 'Dein Projekt'}
+                </span>
               </button>
               <button
                 title="Module & Einstellungen"

@@ -39,6 +39,13 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.5.0
+
+- Die Projektauswahl mit dem aktuellen Titel befindet sich vollständig in der oberen Werkzeugleiste. Auf schmalen Displays bleibt eine kompakte Cover-Schaltfläche. Die Seitenleiste bietet dadurch mehr Platz für die Gliederung.
+- „Projekte & Export“ zeigt Projekte als Coverkarten. Projekt auswählen → „Cover hinzufügen“; vorhandene Cover lassen sich ersetzen oder entfernen. Ohne Bild erscheint ein gestalteter Platzhalter.
+- Unterstützt werden JPG, PNG und WebP bis 20 MB / 40 Megapixel. Bilder werden auf dem Gerät proportional verkleinert (maximal 768 × 1152 Pixel) und als kompakte Bilddaten gespeichert. Vorschaubilder zeigen das vollständige Cover; es werden keine Bilder zu GitHub oder einem Bilddienst übertragen.
+- Cover sind optionale Projektdaten und bleiben in JSON-Sicherungen, Versionen und gelöschten/wiederhergestellten Projekten erhalten. Die Funktion dient der Darstellung in der Projektverwaltung; der EPUB-/Druckexport verwendet weiterhin die bisherigen Text-Titelseiten.
+
 ## Neu in 0.4.2
 
 In „Projekte & Export“ das gewünschte Projekt auswählen und „Aktuelles Projekt löschen“ drücken. Nach Bestätigung wird es aus der Projektliste entfernt und vorher vollständig als Version gesichert. „Gelöschte Projekte“ stellt es samt vorhandenen Versionen wieder her. Es handelt sich um wiederherstellbares Löschen; die Daten bleiben lokal und in kompletten JSON-Sicherungen enthalten. Auch deren Import erhält gelöschte Projekte. Nach Löschen des letzten Projekts bleibt ein neues leeres Projekt, ohne Demo-Inhalte.

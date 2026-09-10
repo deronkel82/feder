@@ -1,3 +1,4 @@
+import { validCover } from './cover-data.ts';
 import type { ChapterMeta } from './chapters.ts';
 export type Scene = {
   id: string;
@@ -21,6 +22,7 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  cover?: string;
   format?: 'novel' | 'novella' | 'short';
   sceneMode?: boolean;
   charTarget?: number;
@@ -206,6 +208,8 @@ export function validateLibrary(data: unknown): Library {
           p.charTarget > 100000000))
     )
       throw Error('Ungültige Projektart oder Zeichenbegrenzung.');
+    if (p.cover !== undefined && !validCover(p.cover))
+      throw Error('Ungültiges Coverbild.');
     if (p.chapterMeta !== undefined) {
       if (!Array.isArray(p.chapterMeta))
         throw Error('Ungültige Kapitelangaben.');

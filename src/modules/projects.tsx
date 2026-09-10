@@ -1,3 +1,5 @@
+import { CoverEditor, ProjectCover } from './covers';
+import { setProjectCover } from '../core/cover-data';
 import {
   deleteProject,
   deletedProjects,
@@ -18,7 +20,7 @@ import {
 } from '../core/project-format';
 import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
-import { Plus, Download, Upload, BookOpen, Trash2 } from 'lucide-react';
+import { Plus, Download, Upload, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -146,7 +148,7 @@ export function ProjectDialog({
           Alles bleibt lokal auf diesem Gerät. Sichere regelmäßig eine Kopie
           deiner Arbeit.
         </DialogDescription>
-        <div className="project-list">
+        <div className="project-list project-gallery">
           {library.projects.map((p) => (
             <button
               className={p.id === library.active ? 'current-project' : ''}
@@ -156,9 +158,9 @@ export function ProjectDialog({
                 select(p.scenes[0].id);
               }}
             >
-              <BookOpen size={20} />
-              <span>
-                {p.title}
+              <ProjectCover project={p} />
+              <span className="project-card-caption">
+                <strong>{p.title}</strong>
                 <small>
                   {formatNames[projectFormat(p)]} ·{' '}
                   {isShort(p)
@@ -170,10 +172,19 @@ export function ProjectDialog({
                     : ''}
                 </small>
               </span>
-              {p.id === library.active && <small>Aktiv</small>}
+              {p.id === library.active && (
+                <small className="project-active-badge">Aktiv</small>
+              )}
             </button>
           ))}
         </div>
+        <CoverEditor
+          key={project.id}
+          project={project}
+          change={(id, cover) =>
+            setLibrary((l) => setProjectCover(l, id, cover))
+          }
+        />
         <button
           className="project-delete-button"
           disabled={!!error}
