@@ -1,3 +1,4 @@
+import { mergeComments } from './text-tools.ts';
 import { isStandalone, usesScenes } from './project-format.ts';
 import { chapterDetails, orderedScenes, type ChapterMeta } from './chapters.ts';
 import { moveScene, newScene, type Scene, type Library } from './model.ts';
@@ -92,6 +93,7 @@ export function changeStructure(
     if (!source.length) throw Error('Kapitel nicht gefunden.');
     const merged: Scene = {
       ...source[0],
+      comments: mergeComments(source, false),
       title: action.chapter,
       chapter: target,
       text: source.map((s) => s.text).join('\n\n'),

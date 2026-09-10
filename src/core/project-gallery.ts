@@ -12,6 +12,7 @@ export const projectStatuses = [
 ] as const;
 export type ProjectStatus = Scene['status'];
 export function projectStatus(p: Project): ProjectStatus {
+  if (p.manualStatus) return p.manualStatus;
   if (p.scenes.length && p.scenes.every((s) => s.status === 'Fertig'))
     return 'Fertig';
   if (p.scenes.some((s) => s.status === 'Überarbeitung'))

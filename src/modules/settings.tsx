@@ -1,3 +1,5 @@
+import { AccessibilityFields } from './accessibility';
+import type { Accessibility } from '../core/accessibility';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +26,11 @@ export function SettingsDialog({
   setScheme,
   error,
   onModuleDisabled,
+  accessibility,
+  setAccessibility,
 }: {
+  accessibility: Accessibility;
+  setAccessibility: (v: Accessibility) => void;
   open: boolean;
   setOpen: (v: boolean) => void;
   library: Library;
@@ -108,6 +114,10 @@ export function SettingsDialog({
                 ))}
               </div>
             </fieldset>
+            <AccessibilityFields
+              value={accessibility}
+              change={setAccessibility}
+            />
           </TabsContent>
           <TabsContent value="author" className="settings-panel">
             <h2>Autor & Pseudonym</h2>

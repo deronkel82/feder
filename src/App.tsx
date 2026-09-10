@@ -1,3 +1,10 @@
+import { SearchReplace, CommentsDialog } from './modules/text-review';
+import { SharedWorldPanel } from './modules/library-extras';
+import {
+  readAccessibility,
+  applyAccessibility,
+  storeAccessibility,
+} from './core/accessibility';
 import { SettingsDialog } from './modules/settings';
 import { readScheme, storeScheme, applyTheme } from './core/themes';
 import { ProjectCover } from './modules/covers';
@@ -127,6 +134,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [projectDialog, setProjectDialog] = useState(false);
   const [settings, setSettings] = useState(false);
   const [versionDialog, setVersionDialog] = useState(false);
+  const [searchDialog, setSearchDialog] = useState(false);
+  const [commentsDialog, setCommentsDialog] = useState(false);
+  const [accessibility, setAccessibility] = useState(readAccessibility);
   const [dark, setDark] = useState(readDarkMode);
   const [scheme, setScheme] = useState(readScheme);
   const [structure, setStructure] = useState<StructureSelection | null>(null);
@@ -146,7 +156,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const p = library.projects.find((p) => p.id === library.active)!;
   const view = isOther(p) ? 'write' : storedView;
   const updates = useUpdates(library, saveError);
-  const recognition = useEntities(p, !isOther(p));
+  const sharedWorld = library.worlds?.find((w) => w.id === p.worldId);
+  const recognitionProject = useMemo(
+    () =>
+      sharedWorld ? { ...p, cards: [...p.cards, ...sharedWorld.cards] } : p,
+    [p, sharedWorld],
+  );
+  const recognition = useEntities(recognitionProject, !isOther(p));
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
   const deferred = useDeferredValue(s.text);
   const findings = useMemo(() => analyze(deferred), [deferred]);
@@ -156,6 +172,48 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
     storeScheme(scheme);
     applyTheme(scheme, dark);
   }, [dark, scheme]);
+  useEffect(() => {
+    applyAccessibility(accessibility);
+    storeAccessibility(accessibility);
+  }, [accessibility]);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (
+        !(e.metaKey || e.ctrlKey) ||
+        !e.shiftKey ||
+        document.querySelector('[role="dialog"]')
+      )
+        return;
+      if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setSearchDialog(true);
+      }
+      if (e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        setSelection({
+          start: editor.current?.selectionStart || 0,
+          end: editor.current?.selectionEnd || 0,
+          word: '',
+        });
+        setCommentsDialog(true);
+      }
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setVersionDialog(true);
+      }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, []);
+  function jumpTo(sceneId: string, start: number, end: number) {
+    setSelected(sceneId);
+    setView('write');
+    setSelection({ start, end, word: '' });
+    setTimeout(() => {
+      editor.current?.focus();
+      editor.current?.setSelectionRange(start, end);
+    }, 100);
+  }
   useEffect(() => {
     const fn = () => setOffline(!navigator.onLine);
     window.addEventListener('online', fn);
@@ -427,6 +485,30 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 <div className="document-bar">
                   <div className="formatting">
                     <button
+                      className="text-button"
+                      title="Suchen & Ersetzen"
+                      onClick={() => setSearchDialog(true)}
+                    >
+                      <Search size={17} />
+                      <span>Suchen</span>
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        setSelection({
+                          start: editor.current?.selectionStart || 0,
+                          end: editor.current?.selectionEnd || 0,
+                          word: '',
+                        });
+                        setCommentsDialog(true);
+                      }}
+                    >
+                      Kommentare
+                      {(s.comments || []).filter((c) => !c.resolved).length
+                        ? ` (${s.comments!.filter((c) => !c.resolved).length})`
+                        : ''}
+                    </button>
+                    <button
                       title="Fett (Markdown)"
                       aria-label="Fett"
                       onClick={() => format('**')}
@@ -592,31 +674,41 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               </div>
             ) : (
               <div className="world-layout">
-                <CardsView
-                  key={view}
-                  kind={
-                    view === 'board'
-                      ? 'Idee'
-                      : view === 'research'
-                        ? 'Recherche'
-                        : 'Figur'
-                  }
-                  project={p}
-                  update={update}
-                  openScene={(id) => {
-                    setSelected(id);
-                    setView('write');
-                  }}
-                  sendIdea={(card, target) => {
-                    const result = sendIdea(library, card, target);
-                    setLibrary(result.library);
-                    setSelected(result.sceneId);
-                    setView('write');
-                    setNotice(
-                      'Idee in die Textplanung übernommen. Die Zusammenfassung steht bereit.',
-                    );
-                  }}
-                />
+                <div className="world-main">
+                  {view === 'world' && (
+                    <SharedWorldPanel
+                      library={library}
+                      setLibrary={setLibrary}
+                      project={p}
+                      disabled={!!saveError}
+                    />
+                  )}
+                  <CardsView
+                    key={view}
+                    kind={
+                      view === 'board'
+                        ? 'Idee'
+                        : view === 'research'
+                          ? 'Recherche'
+                          : 'Figur'
+                    }
+                    project={p}
+                    update={update}
+                    openScene={(id) => {
+                      setSelected(id);
+                      setView('write');
+                    }}
+                    sendIdea={(card, target) => {
+                      const result = sendIdea(library, card, target);
+                      setLibrary(result.library);
+                      setSelected(result.sceneId);
+                      setView('write');
+                      setNotice(
+                        'Idee in die Textplanung übernommen. Die Zusammenfassung steht bereit.',
+                      );
+                    }}
+                  />
+                </div>
                 {view === 'world' && (
                   <EntityPanel {...recognition} project={p} update={update} />
                 )}
@@ -859,6 +951,32 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           />
         </DialogContent>
       </Dialog>
+      <SearchReplace
+        key={p.id + '-search'}
+        open={searchDialog}
+        setOpen={setSearchDialog}
+        project={p}
+        setLibrary={setLibrary}
+        disabled={!!saveError}
+        jump={jumpTo}
+      />
+      <CommentsDialog
+        key={p.id + s.id}
+        open={commentsDialog}
+        setOpen={setCommentsDialog}
+        scene={s}
+        title={
+          isStandalone(p)
+            ? p.title
+            : usesScenes(p)
+              ? s.title
+              : chapterLabel(p, s.chapter)
+        }
+        selection={selection}
+        patch={patch}
+        jump={(start, end) => jumpTo(s.id, start, end)}
+        disabled={!!saveError}
+      />
       <SettingsDialog
         open={settings}
         setOpen={setSettings}
@@ -871,6 +989,8 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         scheme={scheme}
         setScheme={setScheme}
         error={!!saveError}
+        accessibility={accessibility}
+        setAccessibility={setAccessibility}
         onModuleDisabled={(id) => {
           if (view === id) setView('write');
         }}

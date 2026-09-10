@@ -1,4 +1,4 @@
-import { seed, validateLibrary, type Library } from './model.ts';
+import { seed, validateLibrary, type Library, type Project } from './model.ts';
 const KEY = 'feder.library.v1';
 let dbPromise: Promise<IDBDatabase> | null = null;
 let revision = 0;
@@ -84,6 +84,38 @@ export function save(library: Library) {
           return;
         }
         store.put({ library: copy, revision: revision + 1 }, KEY);
+        if (copy.purgedProjectIds?.length) {
+          const purged = new Set(copy.purgedProjectIds);
+          const cursor = store.openCursor();
+          cursor.onsuccess = () => {
+            const c = cursor.result;
+            if (!c) return;
+            if (typeof c.key === 'string' && c.key.startsWith('backup:')) {
+              const backup = c.value;
+              if (Array.isArray(backup.library?.projects)) {
+                backup.library.projects = backup.library.projects.filter(
+                  (p: Project) => !purged.has(p.id),
+                );
+                backup.library.snapshots = (
+                  backup.library.snapshots || []
+                ).filter(
+                  (s: { project: Project }) => !purged.has(s.project.id),
+                );
+                if (!backup.library.projects.length) c.delete();
+                else {
+                  if (
+                    !backup.library.projects.some(
+                      (p: Project) => p.id === backup.library.active,
+                    )
+                  )
+                    backup.library.active = backup.library.projects[0].id;
+                  c.update(backup);
+                }
+              }
+            }
+            c.continue();
+          };
+        }
       };
       tx.oncomplete = () => {
         revision++;

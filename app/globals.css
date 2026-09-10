@@ -2574,3 +2574,323 @@ small,
     padding: 10px;
   }
 }
+/* Editing tools share a responsive dialog and touch-friendly controls. */
+.review-dialog {
+  width: min(960px, calc(100vw - 24px));
+  max-width: 960px !important;
+  max-height: 90dvh;
+  overflow: auto;
+  background: var(--card);
+}
+.review-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.review-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-fields input,
+.review-fields select,
+.inline-form input,
+.shared-world > input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+}
+.review-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+.review-options label,
+.accessibility-fields > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+.review-results {
+  max-height: 45dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.replace-hit,
+.comment-card {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.replace-hit p {
+  white-space: pre-wrap;
+  margin: 8px 0;
+}
+.text-diff .diff-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 18px;
+  line-height: 1.8;
+  background: var(--background);
+}
+.text-diff ins,
+.replace-hit ins {
+  background: #d6f3dd;
+  color: #164327;
+  text-decoration: underline;
+}
+.text-diff del,
+.replace-hit del {
+  background: #ffe0dc;
+  color: #74261e;
+  text-decoration: line-through;
+}
+.review-dialog blockquote {
+  border-left: 3px solid var(--primary);
+  padding: 8px 14px;
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow: auto;
+}
+.project-extras {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+}
+.project-extras summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.template-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.template-row strong {
+  flex: 1;
+  min-width: 120px;
+}
+.shared-world {
+  margin: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.shared-world h2 {
+  font:
+    24px Georgia,
+    serif;
+  margin-bottom: 10px;
+}
+.inline-form {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+.shared-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.shared-card-list button {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.shared-card-list small {
+  color: var(--muted-foreground);
+}
+.accessibility-fields {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.accessibility-fields h3 {
+  font-weight: 600;
+}
+.writing-text {
+  font-size: var(--writing-size, 21px);
+  line-height: var(--writing-leading, 1.8);
+  font-family: var(--writing-font, Georgia, serif);
+}
+.document-bar {
+  height: auto;
+  min-height: 55px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.document-bar .formatting {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.document-bar .formatting .text-button {
+  width: auto;
+  height: auto;
+  min-height: 36px;
+  font: 13px var(--font-geist-sans);
+}
+.large-targets button,
+.large-targets select,
+.large-targets input:not([type='checkbox']):not([type='radio']) {
+  min-height: 44px;
+}
+.large-targets .topbar {
+  height: auto;
+  min-height: 64px;
+  flex-wrap: wrap;
+}
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (pointer: coarse) {
+  button,
+  select {
+    min-height: 44px;
+  }
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+  }
+  .gallery-move-controls button {
+    min-height: 44px !important;
+  }
+}
+@media (max-width: 600px) {
+  .review-fields {
+    grid-template-columns: 1fr;
+  }
+  .inline-form {
+    flex-direction: column;
+  }
+  .shared-world {
+    margin: 12px;
+    padding: 14px;
+  }
+  .document-bar {
+    padding: 10px 12px;
+  }
+  .deleted-project-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+.world-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+.world-main > .module-page {
+  overflow: visible;
+  height: auto;
+}
+@media (max-width: 1000px) {
+  .world-main {
+    overflow: visible;
+  }
+}
+.review-dialog input[type='checkbox'],
+.project-extras input[type='checkbox'] {
+  margin-right: 8px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+}
+
+.review-dialog textarea,
+.card-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+}
+.shared-world > .field-label {
+  margin-top: 12px;
+}
+.version-dialog {
+  width: min(1000px, calc(100vw - 24px));
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.large-targets button {
+  min-width: 44px;
+}
+.large-targets .gallery-small {
+  --cover-size: 110px;
+}
+.large-targets .gallery-move-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(44px, 1fr));
+}
+.large-targets .gallery-drag {
+  grid-column: 1/-1;
+  grid-row: 1;
+}
+@media (any-pointer: coarse) {
+  button,
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .project-browser .gallery-small {
+    --cover-size: 110px;
+  }
+  .gallery-move-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+  }
+  .gallery-drag {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    flex-wrap: wrap;
+  }
+  .top-actions {
+    flex-wrap: wrap;
+  }
+}

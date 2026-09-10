@@ -23,3 +23,26 @@ void test('IndexedDB roundtrip, snapshot persistence and competing windows', asy
   const raw = JSON.parse(await rawBackup());
   assert.equal(raw.projects[0].title, 'Aktueller Stand');
 });
+void test('permanent deletion atomically removes project history from update backups while preserving other projects', async () => {
+  const { backupForUpdate, recoveryBackups } =
+    await import('../src/core/storage.ts');
+  const { newProject } = await import('../src/core/model.ts');
+  const { deleteProject } = await import('../src/core/project-deletion.ts');
+  const { purgeProject } = await import('../src/core/library-tools.ts');
+  let l = (await load()).library;
+  const id = l.active;
+  l.projects.push(newProject('Behalten'));
+  await save(l);
+  await backupForUpdate(l);
+  l = purgeProject(deleteProject(l, id), id);
+  await save(l);
+  const backups = await recoveryBackups();
+  assert.ok(backups.length > 0);
+  for (const b of backups) {
+    const data = b.library as typeof l;
+    assert.ok(!data.projects.some((p) => p.id === id));
+    assert.ok(!data.snapshots.some((s) => s.project.id === id));
+    assert.ok(data.projects.some((p) => p.title === 'Behalten'));
+  }
+  assert.deepEqual((await load()).library, l);
+});

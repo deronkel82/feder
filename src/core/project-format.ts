@@ -1,3 +1,4 @@
+import { mergeComments } from './text-tools.ts';
 import { type Project, type Library, type Scene, words } from './model.ts';
 import { orderedScenes } from './chapters.ts';
 import { withSnapshot } from './history.ts';
@@ -41,6 +42,7 @@ function merged(scenes: Scene[]): Scene {
   if (scenes.length === 1) return first;
   return {
     ...first,
+    comments: mergeComments(scenes, true),
     text: scenes
       .map((s) => s.text)
       .filter(Boolean)

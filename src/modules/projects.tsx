@@ -1,3 +1,4 @@
+import { ProjectExtras, PurgeButton } from './library-extras';
 import { AuthorFields } from './authors';
 import { applyDefaultAuthor, setDefaultAuthor } from '../core/authors';
 import { ProjectGallery } from './project-gallery';
@@ -110,12 +111,19 @@ export function ProjectDialog({
             ]),
           ].map((id) => [id, uid()]),
         );
+        const worldIds = new Map(
+          (imported.worlds || []).map((w) => [w.id, uid()]),
+        );
+        const remapWorld = (p: Project) => ({
+          ...p,
+          worldId: p.worldId ? worldIds.get(p.worldId) : undefined,
+        });
         const importDefault =
           library.defaultAuthor ?? imported.defaultAuthor ?? '';
         const projects = imported.projects.map((p) => ({
           ...applyDefaultAuthor(
             {
-              ...p,
+              ...remapWorld(p),
               authorOverride:
                 p.authorOverride === true ||
                 (p.authorOverride !== false && !!p.author.trim()) ||
@@ -128,7 +136,7 @@ export function ProjectDialog({
         const snapshots = imported.snapshots.map((s) => ({
           ...s,
           id: uid(),
-          project: { ...s.project, id: ids.get(s.project.id)! },
+          project: { ...remapWorld(s.project), id: ids.get(s.project.id)! },
         }));
         setLibrary((l) => {
           const base = setDefaultAuthor(
@@ -137,6 +145,21 @@ export function ProjectDialog({
           );
           return {
             ...base,
+            worlds: [
+              ...(base.worlds || []),
+              ...(imported.worlds || []).map((w) => ({
+                ...w,
+                id: worldIds.get(w.id)!,
+              })),
+            ],
+            templates: [
+              ...(base.templates || []),
+              ...(imported.templates || []).map((t) => ({
+                ...t,
+                id: uid(),
+                project: { ...remapWorld(t.project), id: uid() },
+              })),
+            ],
             projects: [...base.projects, ...projects],
             active: projects[0].id,
             snapshots: [...snapshots, ...base.snapshots],
@@ -198,6 +221,14 @@ export function ProjectDialog({
           disabled={!!error}
         />
         <h2 className="dialog-section">Einstellungen: {project.title}</h2>
+        <ProjectExtras
+          library={library}
+          setLibrary={setLibrary}
+          project={project}
+          update={update}
+          select={select}
+          disabled={!!error}
+        />
         <CoverEditor
           key={project.id}
           project={project}
@@ -215,7 +246,7 @@ export function ProjectDialog({
         </button>
         {deleted.length > 0 && (
           <details className="deleted-projects">
-            <summary>Gelöschte Projekte ({deleted.length})</summary>
+            <summary>Papierkorb ({deleted.length})</summary>
             <p className="muted small">
               Diese Projekte sind aus der Projektliste entfernt. Ihre Inhalte
               und Versionen bleiben zur Wiederherstellung lokal gespeichert und
@@ -241,6 +272,12 @@ export function ProjectDialog({
                 >
                   Wiederherstellen
                 </button>
+                <PurgeButton
+                  library={library}
+                  setLibrary={setLibrary}
+                  id={v.project.id}
+                  disabled={!!error}
+                />
               </div>
             ))}
           </details>

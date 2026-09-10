@@ -1,3 +1,4 @@
+import { reanchorComments } from './text-tools.ts';
 import { uid, type Library, type Project, type Scene } from './model.ts';
 export function withSnapshot(
   library: Library,
@@ -70,7 +71,15 @@ export function reviseScene(
             ...x,
             updated: new Date(now).toISOString(),
             scenes: x.scenes.map((t) =>
-              t.id === sceneId ? { ...t, ...patch } : t,
+              t.id === sceneId
+                ? {
+                    ...t,
+                    ...patch,
+                    ...(patch.text !== undefined
+                      ? { comments: reanchorComments(t, patch.text) }
+                      : {}),
+                  }
+                : t,
             ),
           }
         : x,

@@ -1,6 +1,9 @@
+import type { TextComment } from './text-tools.ts';
+import type { ProjectTemplate, SharedWorld } from './library-tools.ts';
 import { validCover } from './cover-data.ts';
 import type { ChapterMeta } from './chapters.ts';
 export type Scene = {
+  comments?: TextComment[];
   id: string;
   title: string;
   chapter: string;
@@ -22,6 +25,8 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  manualStatus?: Scene['status'];
+  worldId?: string;
   cover?: string;
   format?: 'novel' | 'novella' | 'short' | 'other';
   sceneMode?: boolean;
@@ -51,6 +56,9 @@ export type Snapshot = {
 };
 export type Library = {
   version: 2;
+  templates?: ProjectTemplate[];
+  worlds?: SharedWorld[];
+  purgedProjectIds?: string[];
   defaultAuthor?: string;
   projects: Project[];
   active: string;
@@ -214,6 +222,13 @@ export function validateLibrary(data: unknown): Library {
           p.charTarget > 100000000))
     )
       throw Error('Ungültige Projektart oder Zeichenbegrenzung.');
+    if (p.worldId !== undefined && !str(p.worldId))
+      throw Error('Ungültige Romanwelt.');
+    if (
+      p.manualStatus !== undefined &&
+      !['Idee', 'Entwurf', 'Überarbeitung', 'Fertig'].includes(p.manualStatus)
+    )
+      throw Error('Ungültiger Projektstatus.');
     if (p.cover !== undefined && !validCover(p.cover))
       throw Error('Ungültiges Coverbild.');
     if (p.chapterMeta !== undefined) {
@@ -252,6 +267,28 @@ export function validateLibrary(data: unknown): Library {
         !['Idee', 'Entwurf', 'Überarbeitung', 'Fertig'].includes(s.status)
       )
         throw Error('Ungültige Szene.');
+      if (s.comments !== undefined) {
+        if (
+          !Array.isArray(s.comments) ||
+          s.comments.some(
+            (c) =>
+              !c ||
+              !str(c.id) ||
+              !str(c.quote) ||
+              !str(c.text) ||
+              typeof c.resolved !== 'boolean' ||
+              (c.orphaned !== undefined && typeof c.orphaned !== 'boolean') ||
+              !Number.isInteger(c.start) ||
+              !Number.isInteger(c.end) ||
+              c.start < 0 ||
+              c.end < c.start ||
+              (!c.orphaned &&
+                (c.end > s.text.length ||
+                  s.text.slice(c.start, c.end) !== c.quote)),
+          )
+        )
+          throw Error('Ungültiger Textkommentar.');
+      }
       sids.add(s.id);
     }
     if ((p.format === 'short' || p.format === 'other') && p.scenes.length !== 1)
@@ -292,6 +329,47 @@ export function validateLibrary(data: unknown): Library {
       throw Error('Ungültiger Versionsname.');
     if (s.number !== undefined && (!Number.isInteger(s.number) || s.number < 1))
       throw Error('Ungültige Versionsnummer.');
+  }
+  if (
+    d.purgedProjectIds !== undefined &&
+    (!Array.isArray(d.purgedProjectIds) || !d.purgedProjectIds.every(str))
+  )
+    throw Error('Ungültiger Papierkorb.');
+  if (d.templates !== undefined) {
+    if (!Array.isArray(d.templates)) throw Error('Ungültige Vorlagen.');
+    const ids = new Set<string>();
+    for (const t of d.templates) {
+      if (!t || !str(t.id) || !str(t.name) || ids.has(t.id))
+        throw Error('Ungültige Vorlage.');
+      ids.add(t.id);
+      t.project = validateLibrary({
+        version: 2,
+        projects: [t.project],
+        active: t.project?.id,
+        snapshots: [],
+      }).projects[0];
+    }
+  }
+  if (d.worlds !== undefined) {
+    if (!Array.isArray(d.worlds)) throw Error('Ungültige Romanwelten.');
+    const ids = new Set<string>();
+    for (const w of d.worlds) {
+      if (
+        !w ||
+        !str(w.id) ||
+        !str(w.name) ||
+        !Array.isArray(w.cards) ||
+        ids.has(w.id)
+      )
+        throw Error('Ungültige Romanwelt.');
+      ids.add(w.id);
+      validateLibrary({
+        version: 2,
+        projects: [{ ...newProject(), id: 'validation', cards: w.cards }],
+        active: 'validation',
+        snapshots: [],
+      });
+    }
   }
   return d;
 }

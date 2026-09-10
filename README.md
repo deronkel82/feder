@@ -39,6 +39,17 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.8.0
+
+- **Versionsvergleich:** Gesicherten Stand mit dem aktuellen Manuskript oder einer anderen Version vergleichen. Ergänzungen sind unterstrichen, Entfernungen durchgestrichen. Neue und entfernte Textabschnitte werden mit angezeigt. Sehr große Änderungen werden abschnittsweise markiert.
+- **Suchen & Ersetzen:** Im Manuskript über „Suchen“. Literale Suche mit optionaler Groß-/Kleinschreibung und Wortgrenzen; Vorschau mit auswählbaren Treffern, 50 pro Seite und bis zu 2.000 pro Durchlauf. Vor dem Ersetzen wird eine vollständige Projektversion gesichert.
+- **Papierkorb:** In der Projektverwaltung wiederherstellen oder nach Eingabe von „LÖSCHEN“ endgültig entfernen. Dabei werden auch zugehörige Projektstände in lokalen Update-Sicherungen entfernt. Externe Dateien, Vorlagen und gemeinsame Romanwelten bleiben erhalten.
+- **Projektstatus:** In den Projekteinstellungen automatisch ableiten oder manuell setzen. Die Projektfilter berücksichtigen die manuelle Angabe; Szenenstatus bleibt unabhängig.
+- **Vorlagen:** Unter den Projekteinstellungen Kapitel, Szenentitel, Zusammenfassungen, Module und Ziele als Vorlage speichern und neue Projekte daraus anlegen. Manuskripttexte, Kommentare, Cover und Karten werden nicht kopiert.
+- **Gemeinsame Romanwelt:** Unter Figuren & Orte eine Romanwelt anlegen oder auswählen; dieselbe Welt in weiteren Projekten wählen. Figuren und Orte zentral bearbeiten, suchen, umbenennen oder löschen. Lokale Karten können als unabhängige Kopien übernommen werden. Gemeinsame Karten werden bei der Namenserkennung berücksichtigt. Projektversionen setzen gemeinsame Romanwelten nicht zurück. Diese Funktion bleibt wie die übrigen Daten lokal auf dem Gerät und ist keine Gerätesynchronisierung.
+- **Textkommentare:** Text markieren, „Kommentare“ öffnen und Notiz hinterlegen. Kommentare lassen sich bearbeiten, als erledigt markieren und über „Zur Textstelle“ wiederfinden. Bei überschriebenen Textstellen bleibt das ursprüngliche Zitat als nicht mehr zugeordneter Kommentar erhalten. Kommentare sind in JSON-Sicherungen und Versionen, nicht im Manuskriptexport enthalten.
+- **Bedienung:** Einstellungen → Darstellung → Lesen & Bedienen: Textgröße, Zeilenabstand, Serifen-/Sans-Schrift, große Schaltflächen, reduzierte Animationen. Touchgeräte erhalten mindestens 44-Pixel-Schaltflächen; Suchvorschau und Dialoge passen sich schmalen Displays an. Außerhalb von Dialogen: Strg/⌘ + Umschalt + F (Suchen), M (Kommentare), S (Version).
+
 ## Neu in 0.7.0
 
 - Fünf Farbschemata mit Hell- und Dunkelvarianten: Petrol, Sand, Wald, Lavendel und Graphit. Die Auswahl gilt auf diesem Gerät für alle Projekte und wird vor dem ersten Rendern wiederhergestellt.
