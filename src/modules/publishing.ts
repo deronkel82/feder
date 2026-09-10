@@ -1,4 +1,4 @@
-import { isShort, usesScenes } from '../core/project-format.ts';
+import { isStandalone, usesScenes } from '../core/project-format.ts';
 import {
   chapterLabel,
   chapterDetails,
@@ -27,7 +27,7 @@ export const paragraphs = (s: string) =>
     )
     .join('\n');
 export function exportHeading(p: Project, s: Scene) {
-  if (isShort(p)) return p.title;
+  if (isStandalone(p)) return p.title;
   return [
     chapterDetails(p, s.chapter).part,
     chapterLabel(p, s.chapter),
@@ -84,7 +84,7 @@ export function printBook(p: Project) {
     frame.contentWindow?.print();
     setTimeout(() => frame.remove(), 60000);
   };
-  if (isShort(p)) {
+  if (isStandalone(p)) {
     frame.srcdoc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>@page{size:A4;margin:25mm}body{font:12pt/1.8 Georgia,serif}p{orphans:3;widows:3}</style></head><body><h1>${escape(p.title)}</h1><p>${escape(p.author)}</p>${paragraphs(p.scenes[0].text)}</body></html>`;
     return;
   }

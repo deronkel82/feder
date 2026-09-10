@@ -1,4 +1,4 @@
-import { isShort, usesScenes } from './project-format.ts';
+import { isStandalone, usesScenes } from './project-format.ts';
 import { chapterDetails, orderedScenes, type ChapterMeta } from './chapters.ts';
 import { moveScene, newScene, type Scene, type Library } from './model.ts';
 import { withSnapshot } from './history.ts';
@@ -37,7 +37,7 @@ export function changeStructure(
   action: StructureAction,
 ): Library {
   const project = library.projects.find((p) => p.id === library.active)!;
-  if (isShort(project))
+  if (isStandalone(project))
     throw Error('Kurzgeschichten verwenden einen zusammenhängenden Text.');
   if (
     !usesScenes(project) &&

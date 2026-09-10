@@ -39,6 +39,12 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.6.0
+
+- Projektbibliothek auf Vollbild umschalten, Cover in drei Größen anzeigen.
+- Nach Projektart filtern; alphabetisch, nach letzter Änderung oder frei sortieren. Ziehen am Griff funktioniert mit Maus und Touch; Pfeile ermöglichen die Bedienung ohne Ziehen. Freie Reihenfolge bleibt in der lokalen Bibliothek und JSON-Sicherung erhalten; Filter und Covergröße werden auf dem Gerät gemerkt.
+- Neue Projektart **Sonstiges**: Überschrift und ein Text ohne Kapitel, Planung, Romanwelt oder Zielvorgaben. Bei Umstellung werden vorhandene Texte zusammengefügt und der vorherige Stand als Version gesichert.
+
 ## Neu in 0.5.0
 
 - Die Projektauswahl mit dem aktuellen Titel befindet sich vollständig in der oberen Werkzeugleiste. Auf schmalen Displays bleibt eine kompakte Cover-Schaltfläche. Die Seitenleiste bietet dadurch mehr Platz für die Gliederung.

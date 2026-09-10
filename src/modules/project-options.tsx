@@ -4,6 +4,7 @@ import {
   formatNames,
   projectFormat,
   isShort,
+  isOther,
   usesScenes,
   type ProjectFormat,
 } from '../core/project-format';
@@ -31,7 +32,7 @@ export function FormatFields({
           ))}
         </select>
       </label>
-      {format !== 'short' && (
+      {format !== 'short' && format !== 'other' && (
         <label className="format-check">
           <input
             type="checkbox"
@@ -40,6 +41,12 @@ export function FormatFields({
           />
           Ein Text pro Kapitel (ohne separate Szenen)
         </label>
+      )}
+      {format === 'other' && (
+        <p className="muted small">
+          Nur eine Überschrift und ein Text. Ohne Kapitel, Planung oder
+          Zielvorgaben.
+        </p>
       )}
       {format === 'short' && (
         <p className="muted small">
@@ -77,16 +84,18 @@ export function ProjectModeSettings({
       />
       <p className="muted small">
         Beim Abschalten der Szenen werden ihre Texte je Kapitel zusammengefügt,
-        bei Kurzgeschichten zu einem Gesamttext. Vorher wird eine Version
-        gesichert. Erneutes Einschalten trennt Texte nicht automatisch wieder
-        auf.
+        bei Kurzgeschichten und Sonstiges zu einem Gesamttext. Vorher wird eine
+        Version gesichert. Erneutes Einschalten trennt Texte nicht automatisch
+        wieder auf.
       </p>
       <button
         type="submit"
         className="text-button"
         disabled={
           format === projectFormat(project) &&
-          (format === 'short' || sceneMode === usesScenes(project))
+          (format === 'short' ||
+            format === 'other' ||
+            sceneMode === usesScenes(project))
         }
       >
         Projektart / Textstruktur übernehmen
@@ -101,6 +110,7 @@ export function LimitFields({
   project: Project;
   update: (fn: (p: Project) => Project) => void;
 }) {
+  if (isOther(project)) return null;
   return (
     <div className="limit-fields">
       {isShort(project) && (

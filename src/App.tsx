@@ -1,5 +1,5 @@
 import { ProjectCover } from './modules/covers';
-import { isShort, usesScenes } from './core/project-format';
+import { isOther, isStandalone, usesScenes } from './core/project-format';
 import { WritingProgress } from './modules/writing-progress';
 import { ManuscriptTree } from './modules/manuscript-tree';
 import { chapterLabel, orderedScenes } from './core/chapters';
@@ -117,7 +117,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [savedLibrary, setSavedLibrary] = useState<LibraryData | null>(null);
   const saved = savedLibrary === library;
   const [sideOpen, setSideOpen] = useState(true);
-  const [view, setView] = useState('write');
+  const [storedView, setView] = useState('write');
   const [selected, setSelected] = useState(
     library.projects.find((p) => p.id === library.active)!.scenes[0].id,
   );
@@ -142,8 +142,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [notice, setNotice] = useState('');
   const editor = useRef<HTMLTextAreaElement>(null);
   const p = library.projects.find((p) => p.id === library.active)!;
+  const view = isOther(p) ? 'write' : storedView;
   const updates = useUpdates(library, saveError);
-  const recognition = useEntities(p);
+  const recognition = useEntities(p, !isOther(p));
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
   const deferred = useDeferredValue(s.text);
   const findings = useMemo(() => analyze(deferred), [deferred]);
@@ -210,7 +211,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   };
   function addScene() {
     if (!usesScenes(p)) {
-      if (!isShort(p)) setStructure({ kind: 'new', id: '' });
+      if (!isStandalone(p)) setStructure({ kind: 'new', id: '' });
       return;
     }
     const n = newScene(s.chapter);
@@ -248,104 +249,106 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         inert={updates.busy}
         className={`app-shell ${focus ? 'focus-mode' : ''}`}
       >
-        <Sidebar className="app-sidebar">
-          <div className="brand">
-            <span className="brand-icon">
-              <Feather size={23} />
-            </span>
-            <span>
-              feder<span className="brand-dot">.</span>
-            </span>
-            <span className="edition">SCHREIBATELIER</span>
-          </div>
-          <button
-            className="module-collapse"
-            aria-expanded={modulesOpen}
-            onClick={() => {
-              setModulesOpen(!modulesOpen);
-              try {
-                localStorage.setItem(
-                  'feder.navigation.modules',
-                  modulesOpen ? 'closed' : 'open',
-                );
-              } catch {
-                /* local preference */
-              }
-            }}
-          >
-            <ChevronRight
-              size={15}
-              style={{ transform: modulesOpen ? 'rotate(90deg)' : undefined }}
-            />
-            {modulesOpen
-              ? 'Werkzeuge'
-              : modules.find((m) => m.id === view)?.label || 'Werkzeuge'}
-            <small>{modulesOpen ? 'Einklappen' : 'Ausklappen'}</small>
-          </button>
-          {modulesOpen && (
-            <Navigation view={view} go={go} enabled={p.enabled} />
-          )}
-          <div className="sidebar-divider" />
-          <div className="section-label">
-            <span>MANUSKRIPT</span>
-            {!isShort(p) && (
-              <div className="manuscript-add">
-                <button
-                  aria-label="Kapitel hinzufügen"
-                  title="Kapitel hinzufügen"
-                  onClick={() => setStructure({ kind: 'new', id: '' })}
-                >
-                  <BookOpen size={16} />
-                </button>
-                {usesScenes(p) && (
-                  <button
-                    aria-label="Szene hinzufügen"
-                    title="Szene hinzufügen"
-                    onClick={addScene}
-                  >
-                    <Plus size={17} />
-                  </button>
-                )}
-              </div>
+        {!isOther(p) && (
+          <Sidebar className="app-sidebar">
+            <div className="brand">
+              <span className="brand-icon">
+                <Feather size={23} />
+              </span>
+              <span>
+                feder<span className="brand-dot">.</span>
+              </span>
+              <span className="edition">SCHREIBATELIER</span>
+            </div>
+            <button
+              className="module-collapse"
+              aria-expanded={modulesOpen}
+              onClick={() => {
+                setModulesOpen(!modulesOpen);
+                try {
+                  localStorage.setItem(
+                    'feder.navigation.modules',
+                    modulesOpen ? 'closed' : 'open',
+                  );
+                } catch {
+                  /* local preference */
+                }
+              }}
+            >
+              <ChevronRight
+                size={15}
+                style={{ transform: modulesOpen ? 'rotate(90deg)' : undefined }}
+              />
+              {modulesOpen
+                ? 'Werkzeuge'
+                : modules.find((m) => m.id === view)?.label || 'Werkzeuge'}
+              <small>{modulesOpen ? 'Einklappen' : 'Ausklappen'}</small>
+            </button>
+            {modulesOpen && !isOther(p) && (
+              <Navigation view={view} go={go} enabled={p.enabled} />
             )}
-          </div>
-          <label className="search-box">
-            <Search size={15} />
-            <input
-              aria-label="Manuskript durchsuchen"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={
-                isShort(p)
-                  ? 'Text durchsuchen'
-                  : usesScenes(p)
-                    ? 'Szenen durchsuchen'
-                    : 'Kapitel durchsuchen'
-              }
+            <div className="sidebar-divider" />
+            <div className="section-label">
+              <span>MANUSKRIPT</span>
+              {!isStandalone(p) && (
+                <div className="manuscript-add">
+                  <button
+                    aria-label="Kapitel hinzufügen"
+                    title="Kapitel hinzufügen"
+                    onClick={() => setStructure({ kind: 'new', id: '' })}
+                  >
+                    <BookOpen size={16} />
+                  </button>
+                  {usesScenes(p) && (
+                    <button
+                      aria-label="Szene hinzufügen"
+                      title="Szene hinzufügen"
+                      onClick={addScene}
+                    >
+                      <Plus size={17} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <label className="search-box">
+              <Search size={15} />
+              <input
+                aria-label="Manuskript durchsuchen"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  isStandalone(p)
+                    ? 'Text durchsuchen'
+                    : usesScenes(p)
+                      ? 'Szenen durchsuchen'
+                      : 'Kapitel durchsuchen'
+                }
+              />
+            </label>
+            <ManuscriptTree
+              project={p}
+              query={query}
+              selected={view === 'write' ? s.id : ''}
+              open={(id) => {
+                setSelected(id);
+                setView('write');
+              }}
+              manage={setStructure}
             />
-          </label>
-          <ManuscriptTree
-            project={p}
-            query={query}
-            selected={view === 'write' ? s.id : ''}
-            open={(id) => {
-              setSelected(id);
-              setView('write');
-            }}
-            manage={setStructure}
-          />
-          <div className="sidebar-bottom">
-            <WritingProgress project={p} />
-          </div>
-        </Sidebar>
+            <div className="sidebar-bottom">
+              {!isOther(p) && <WritingProgress project={p} />}
+            </div>
+          </Sidebar>
+        )}
         <main className="main-area">
           <header className="topbar">
             <div className="breadcrumb">
-              <SidebarTrigger aria-label="Navigation öffnen" />
+              {!isOther(p) && <SidebarTrigger aria-label="Navigation öffnen" />}
               <span>{modules.find((m) => m.id === view)?.label}</span>
               <ChevronRight size={14} />
               <span className="muted">
-                {view === 'write' && !isShort(p)
+                {view === 'write' && !isStandalone(p)
                   ? chapterLabel(p, s.chapter)
                   : p.title}
               </span>
@@ -398,13 +401,15 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               >
                 <Focus size={18} />
               </button>
-              <button
-                aria-label="Werkstatt einblenden"
-                title="Werkstatt"
-                onClick={() => setPanel(!panel)}
-              >
-                <PanelRight size={18} />
-              </button>
+              {!isOther(p) && (
+                <button
+                  aria-label="Werkstatt einblenden"
+                  title="Werkstatt"
+                  onClick={() => setPanel(!panel)}
+                >
+                  <PanelRight size={18} />
+                </button>
+              )}
             </div>
           </header>
           {saveError && (
@@ -443,7 +448,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   </button>
                 </div>
                 <article className="manuscript">
-                  {!isShort(p) && (
+                  {!isStandalone(p) && (
                     <div className="document-eyebrow">
                       {chapterLabel(p, s.chapter)}
                       {usesScenes(p) && (
@@ -461,7 +466,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       value={s.title}
                       onChange={(e) => patch({ title: e.target.value })}
                     />
-                  ) : isShort(p) ? (
+                  ) : isStandalone(p) ? (
                     <input
                       className="scene-title"
                       aria-label="Titel"
@@ -475,14 +480,17 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       {chapterLabel(p, s.chapter)}
                     </h1>
                   )}
-                  <div className="scene-meta">
-                    <span className={`status-dot status-${s.status}`} />
-                    {s.status}
-                    <span>·</span>
-                    {words(s.text)} Wörter<span>·</span>
-                    {Math.max(1, Math.ceil(words(s.text) / 200))} Min. Lesezeit
-                  </div>
-                  {!s.text.trim() && (
+                  {!isOther(p) && (
+                    <div className="scene-meta">
+                      <span className={`status-dot status-${s.status}`} />
+                      {s.status}
+                      <span>·</span>
+                      {words(s.text)} Wörter<span>·</span>
+                      {Math.max(1, Math.ceil(words(s.text) / 200))} Min.
+                      Lesezeit
+                    </div>
+                  )}
+                  {!isOther(p) && !s.text.trim() && (
                     <label className="planned-synopsis">
                       ZUSAMMENFASSUNG / PLANUNG
                       <textarea
@@ -498,7 +506,11 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     spellCheck
                     lang="de"
                     aria-label="Manuskripttext"
-                    placeholder="Hier beginnt deine Geschichte …"
+                    placeholder={
+                      isOther(p)
+                        ? 'Hier ist Platz für deinen Text …'
+                        : 'Hier beginnt deine Geschichte …'
+                    }
                     value={s.text}
                     onChange={(e) =>
                       patch({
@@ -517,12 +529,14 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   />
                   <div className="end-mark">◇</div>
                 </article>
-                <footer className="editor-footer">
-                  <span>
-                    <span className="live-dot" /> Raum für deine Geschichte.
-                  </span>
-                  <span>{s.text.length.toLocaleString('de')} Zeichen</span>
-                </footer>
+                {!isOther(p) && (
+                  <footer className="editor-footer">
+                    <span>
+                      <span className="live-dot" /> Raum für deine Geschichte.
+                    </span>
+                    <span>{s.text.length.toLocaleString('de')} Zeichen</span>
+                  </footer>
+                )}
               </div>
             ) : view === 'timeline' ? (
               <TimelineView
@@ -604,7 +618,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 )}
               </div>
             )}{' '}
-            {view === 'write' && panel && !focus && (
+            {view === 'write' && panel && !focus && !isOther(p) && (
               <aside className="inspector">
                 <div className="inspector-heading">
                   <span>Werkstatt</span>
@@ -616,8 +630,12 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     <ArrowLeft size={17} />
                   </button>
                   <span className="edition">
-                    {isShort(p) ? 'TEXT' : usesScenes(p) ? 'SZENE' : 'KAPITEL'}{' '}
-                    {!isShort(p) &&
+                    {isStandalone(p)
+                      ? 'TEXT'
+                      : usesScenes(p)
+                        ? 'SZENE'
+                        : 'KAPITEL'}{' '}
+                    {!isStandalone(p) &&
                       String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
                   </span>
                 </div>
@@ -642,7 +660,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                         }
                       />
                     </div>
-                    {!isShort(p) && (
+                    {!isStandalone(p) && (
                       <div className="field-label">
                         KAPITEL<span>{chapterLabel(p, s.chapter)}</span>
                         {usesScenes(p) && (

@@ -1,17 +1,21 @@
 import { type Project, type Library, type Scene, words } from './model.ts';
 import { orderedScenes } from './chapters.ts';
 import { withSnapshot } from './history.ts';
-export type ProjectFormat = 'novel' | 'novella' | 'short';
+export type ProjectFormat = 'novel' | 'novella' | 'short' | 'other';
 export const formatNames = {
   novel: 'Roman',
   novella: 'Novelle / Erzählung',
   short: 'Kurzgeschichte',
+  other: 'Sonstiges',
 };
 export const projectFormat = (p: Project): ProjectFormat => p.format || 'novel';
 export const isShort = (p: Project) => projectFormat(p) === 'short';
-export const usesScenes = (p: Project) => !isShort(p) && p.sceneMode !== false;
+export const isOther = (p: Project) => projectFormat(p) === 'other';
+export const isStandalone = (p: Project) => isShort(p) || isOther(p);
+export const usesScenes = (p: Project) =>
+  !isStandalone(p) && p.sceneMode !== false;
 export const defaultTarget = (format: ProjectFormat) =>
-  ({ novel: 50000, novella: 20000, short: 2500 })[format];
+  ({ novel: 50000, novella: 20000, short: 2500, other: 1 })[format];
 export function manuscriptCounts(p: Project) {
   const text = orderedScenes(p)
     .map((s) => s.text)
@@ -22,7 +26,8 @@ export function manuscriptCounts(p: Project) {
 }
 export function progressLimits(p: Project) {
   const counts = manuscriptCounts(p);
-  const wordActive = !isShort(p) || p.wordLimitEnabled !== false;
+  const wordActive =
+    !isOther(p) && (!isShort(p) || p.wordLimitEnabled !== false);
   return {
     ...counts,
     wordActive,
@@ -63,7 +68,7 @@ export function configureProject(
   const p = l.projects.find((p) => p.id === l.active)!;
   const all = orderedScenes(p);
   const groups =
-    format === 'short'
+    format === 'short' || format === 'other'
       ? [all]
       : sceneMode
         ? all.map((s) => [s])
@@ -87,11 +92,15 @@ export function configureProject(
         ? {
             ...x,
             format,
-            sceneMode: format === 'short' ? false : sceneMode,
+            sceneMode:
+              format === 'short' || format === 'other' ? false : sceneMode,
             scenes,
-            chapterMeta: format === 'short' ? [] : x.chapterMeta,
+            chapterMeta:
+              format === 'short' || format === 'other' ? [] : x.chapterMeta,
             series:
-              format === 'short' ? { ...x.series, enabled: false } : x.series,
+              format === 'short' || format === 'other'
+                ? { ...x.series, enabled: false }
+                : x.series,
             cards: x.cards.map((c) =>
               c.manuscriptSceneId
                 ? {

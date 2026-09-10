@@ -1,4 +1,4 @@
-import { isShort, usesScenes } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useState } from 'react';
 import {
@@ -73,7 +73,7 @@ export function ManuscriptTree({
         .filter((c) => c.scenes.length),
     }))
     .filter((g) => g.chapters.length);
-  if (isShort(project))
+  if (isStandalone(project))
     return (
       <div className="scene-list">
         <button

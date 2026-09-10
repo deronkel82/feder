@@ -1,4 +1,4 @@
-import { isShort, usesScenes } from './project-format.ts';
+import { isOther, isStandalone, usesScenes } from './project-format.ts';
 import { newScene, type Library, type Card } from './model.ts';
 import { appendToChapter } from './structure.ts';
 import { withSnapshot } from './history.ts';
@@ -9,15 +9,16 @@ export function sendIdea(
   target: { kind: 'scene' | 'chapter'; chapter: string },
 ) {
   const p = library.projects.find((p) => p.id === library.active)!;
+  if (isOther(p)) throw Error('Sonstiges enthält nur Überschrift und Text.');
   if (card.kind !== 'Idee' || !card.title.trim())
     throw Error('Bitte der Idee zuerst einen Titel geben.');
   const stored = p.cards.find((c) => c.id === card.id);
   const linked = stored?.manuscriptSceneId || card.manuscriptSceneId;
   if (linked && p.scenes.some((s) => s.id === linked))
     return { library, sceneId: linked };
-  if (isShort(p) && target.kind === 'chapter')
+  if (isStandalone(p) && target.kind === 'chapter')
     throw Error('Kurzgeschichten haben keine Kapitel.');
-  const chapter = isShort(p) ? p.scenes[0].chapter : target.chapter.trim();
+  const chapter = isStandalone(p) ? p.scenes[0].chapter : target.chapter.trim();
   if (!chapter) throw Error('Bitte ein Zielkapitel angeben.');
   const exists = p.scenes.some((s) => s.chapter === chapter);
   if (target.kind === 'chapter' && exists)

@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { uid, type Project } from '../core/model';
 import type { Entity } from './entities';
 import { RefreshCw } from 'lucide-react';
-export function useEntities(project: Project) {
+export function useEntities(project: Project, enabled = true) {
   const [request, setRequest] = useState(0);
   const [result, setResult] = useState<{
     project: Project | null;
@@ -15,6 +15,7 @@ export function useEntities(project: Project) {
   const seq = useRef(0);
   const lastManualRequest = useRef(0);
   useEffect(() => {
+    if (!enabled) return;
     const id = ++seq.current;
     let cancelled = false;
     const manual = request !== lastManualRequest.current;
@@ -76,12 +77,13 @@ export function useEntities(project: Project) {
       clearTimeout(timeout);
       worker?.terminate();
     };
-  }, [project, request]);
-  const sameProject = result.project?.id === project.id;
+  }, [project, request, enabled]);
+  const sameProject = enabled && result.project?.id === project.id;
   return {
     entities: sameProject ? result.entities : [],
     error: sameProject ? result.error : '',
-    scanning: result.project !== project || result.request !== request,
+    scanning:
+      enabled && (result.project !== project || result.request !== request),
     checkedAt: sameProject ? result.checkedAt : '',
     rescan: () => setRequest((n) => n + 1),
   };

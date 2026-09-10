@@ -1,4 +1,4 @@
-import { isShort, usesScenes } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { chapterLabel } from '../core/chapters';
 import { useState } from 'react';
 import {
@@ -322,13 +322,13 @@ export function TimelineView({
             <span className="timeline-point" />
             <button className="timeline-card" onClick={() => openScene(s.id)}>
               <small>
-                {!isShort(project) && (
+                {!isStandalone(project) && (
                   <>{chapterLabel(project, s.chapter)} · </>
                 )}
                 {s.status}
               </small>
               <h2>
-                {isShort(project)
+                {isStandalone(project)
                   ? project.title
                   : usesScenes(project)
                     ? s.title
@@ -400,7 +400,7 @@ function IdeaTransfer({
         </button>
       ) : (
         <>
-          {!isShort(project) && (
+          {!isStandalone(project) && (
             <label className="field-label">
               BESTEHENDES KAPITEL
               <select
@@ -424,7 +424,7 @@ function IdeaTransfer({
               ? 'Als neue Szene übernehmen'
               : 'Zur Textplanung hinzufügen'}
           </button>
-          {!isShort(project) && (
+          {!isStandalone(project) && (
             <>
               <label className="field-label">
                 NEUES KAPITEL

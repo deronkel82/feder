@@ -23,7 +23,7 @@ export type Card = {
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
   cover?: string;
-  format?: 'novel' | 'novella' | 'short';
+  format?: 'novel' | 'novella' | 'short' | 'other';
   sceneMode?: boolean;
   charTarget?: number;
   wordLimitEnabled?: boolean;
@@ -198,7 +198,7 @@ export function validateLibrary(data: unknown): Library {
       throw Error('Ungültige Reihen- oder Erkennungsdaten.');
     if (
       (p.format !== undefined &&
-        !['novel', 'novella', 'short'].includes(p.format)) ||
+        !['novel', 'novella', 'short', 'other'].includes(p.format)) ||
       (p.sceneMode !== undefined && typeof p.sceneMode !== 'boolean') ||
       (p.wordLimitEnabled !== undefined &&
         typeof p.wordLimitEnabled !== 'boolean') ||
@@ -248,7 +248,7 @@ export function validateLibrary(data: unknown): Library {
         throw Error('Ungültige Szene.');
       sids.add(s.id);
     }
-    if (p.format === 'short' && p.scenes.length !== 1)
+    if ((p.format === 'short' || p.format === 'other') && p.scenes.length !== 1)
       throw Error(
         'Kurzgeschichten müssen einen zusammenhängenden Text enthalten.',
       );

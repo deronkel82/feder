@@ -1,4 +1,5 @@
-import { CoverEditor, ProjectCover } from './covers';
+import { ProjectGallery } from './project-gallery';
+import { CoverEditor } from './covers';
 import { setProjectCover } from '../core/cover-data';
 import {
   deleteProject,
@@ -13,14 +14,21 @@ import {
 import {
   configureProject,
   projectFormat,
-  isShort,
+  isStandalone,
+  isOther,
   usesScenes,
   defaultTarget,
-  formatNames,
 } from '../core/project-format';
 import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
-import { Plus, Download, Upload, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  Download,
+  Upload,
+  Trash2,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -40,7 +48,7 @@ import {
   rawBackup,
   recoveryBackups,
 } from '../core/storage';
-import { SeriesFields, seriesLabel } from './series';
+import { SeriesFields } from './series';
 import { Versions } from './versions';
 export function ProjectDialog({
   open,
@@ -61,6 +69,7 @@ export function ProjectDialog({
   select: (id: string) => void;
   error: string | null;
 }) {
+  const [fullscreen, setFullscreen] = useState(false);
   const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -120,7 +129,7 @@ export function ProjectDialog({
   }
   const manuscript = () =>
     `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
-    (isShort(project)
+    (isStandalone(project)
       ? project.scenes[0].text
       : chapterGroups(project)
           .map(
@@ -142,42 +151,31 @@ export function ProjectDialog({
           .join('\n\n'));
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="project-dialog">
-        <DialogTitle>Deine Projekte.</DialogTitle>
+      <DialogContent
+        className={`project-dialog ${fullscreen ? 'project-dialog-fullscreen' : ''}`}
+      >
+        <div className="project-dialog-heading">
+          <DialogTitle>Deine Projekte.</DialogTitle>
+          <button
+            className="text-button"
+            aria-pressed={fullscreen}
+            onClick={() => setFullscreen(!fullscreen)}
+          >
+            {fullscreen ? <Minimize2 size={17} /> : <Maximize2 size={17} />}{' '}
+            {fullscreen ? 'Vollbild verlassen' : 'Vollbild'}
+          </button>
+        </div>
         <DialogDescription>
           Alles bleibt lokal auf diesem Gerät. Sichere regelmäßig eine Kopie
           deiner Arbeit.
         </DialogDescription>
-        <div className="project-list project-gallery">
-          {library.projects.map((p) => (
-            <button
-              className={p.id === library.active ? 'current-project' : ''}
-              key={p.id}
-              onClick={() => {
-                setLibrary((l) => ({ ...l, active: p.id }));
-                select(p.scenes[0].id);
-              }}
-            >
-              <ProjectCover project={p} />
-              <span className="project-card-caption">
-                <strong>{p.title}</strong>
-                <small>
-                  {formatNames[projectFormat(p)]} ·{' '}
-                  {isShort(p)
-                    ? 'Ein Text'
-                    : p.scenes.length +
-                      (usesScenes(p) ? ' Szenen' : ' Kapitel')}{' '}
-                  {!isShort(p) && p.series.enabled
-                    ? ' · ' + seriesLabel(p.series)
-                    : ''}
-                </small>
-              </span>
-              {p.id === library.active && (
-                <small className="project-active-badge">Aktiv</small>
-              )}
-            </button>
-          ))}
-        </div>
+        <ProjectGallery
+          library={library}
+          setLibrary={setLibrary}
+          select={select}
+          disabled={!!error}
+        />
+        <h2 className="dialog-section">Einstellungen: {project.title}</h2>
         <CoverEditor
           key={project.id}
           project={project}
@@ -296,20 +294,23 @@ export function ProjectDialog({
                 setDraft({
                   ...draft,
                   format,
-                  sceneMode: format === 'short' ? false : sceneMode,
+                  sceneMode:
+                    format === 'short' || format === 'other'
+                      ? false
+                      : sceneMode,
                   target:
                     format !== projectFormat(draft)
                       ? defaultTarget(format)
                       : draft.target,
                   series:
-                    format === 'short'
+                    format === 'short' || format === 'other'
                       ? { ...draft.series, enabled: false }
                       : draft.series,
                 })
               }
             />
             <LimitFields project={draft} update={(fn) => setDraft(fn)} />
-            {!isShort(draft) && (
+            {!isStandalone(draft) && (
               <SeriesFields
                 value={draft.series}
                 onChange={(series) => setDraft({ ...draft, series })}
@@ -335,15 +336,17 @@ export function ProjectDialog({
               onChange={(e) => update((p) => ({ ...p, title: e.target.value }))}
             />
           </label>
-          <label className="field-label">
-            AUTOR / AUTORIN
-            <input
-              value={project.author}
-              onChange={(e) =>
-                update((p) => ({ ...p, author: e.target.value }))
-              }
-            />
-          </label>
+          {!isOther(project) && (
+            <label className="field-label">
+              AUTOR / AUTORIN
+              <input
+                value={project.author}
+                onChange={(e) =>
+                  update((p) => ({ ...p, author: e.target.value }))
+                }
+              />
+            </label>
+          )}
         </div>
         <ProjectModeSettings
           key={
@@ -359,7 +362,7 @@ export function ProjectDialog({
           }}
         />
         <LimitFields project={project} update={update} />
-        {!isShort(project) && (
+        {!isStandalone(project) && (
           <SeriesFields
             value={project.series}
             onChange={(series) => update((p) => ({ ...p, series }))}
