@@ -39,6 +39,11 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.7.0
+
+- Fünf Farbschemata mit Hell- und Dunkelvarianten: Petrol, Sand, Wald, Lavendel und Graphit. Die Auswahl gilt auf diesem Gerät für alle Projekte und wird vor dem ersten Rendern wiederhergestellt.
+- Neu gegliederte Einstellungen mit Darstellung, Autor, Projektmodulen und App & Daten. Farbvorschauen, direkt bedienbarer Dunkelmodus und responsive Auswahlfelder.
+
 ## Neu in 0.6.2
 
 - Vier kombinierbare Statusfilter: Idee, Entwurf, Überarbeitung und Fertig. Der Projektstatus folgt dem Manuskript: alle Texte fertig → Fertig; mindestens ein Text in Überarbeitung → Überarbeitung; begonnene Texte → Entwurf; sonst Idee. Die Filterauswahl bleibt auf dem Gerät gespeichert.

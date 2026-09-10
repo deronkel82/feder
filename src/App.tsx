@@ -1,4 +1,5 @@
-import { DefaultAuthorSettings } from './modules/authors';
+import { SettingsDialog } from './modules/settings';
+import { readScheme, storeScheme, applyTheme } from './core/themes';
 import { ProjectCover } from './modules/covers';
 import { isOther, isStandalone, usesScenes } from './core/project-format';
 import { WritingProgress } from './modules/writing-progress';
@@ -44,7 +45,6 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { modules } from './modules/registry';
 import { analyze } from './modules/analysis';
 import { load, save } from './core/storage';
@@ -128,6 +128,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [settings, setSettings] = useState(false);
   const [versionDialog, setVersionDialog] = useState(false);
   const [dark, setDark] = useState(readDarkMode);
+  const [scheme, setScheme] = useState(readScheme);
   const [structure, setStructure] = useState<StructureSelection | null>(null);
   const [query, setQuery] = useState('');
   const [modulesOpen, setModulesOpen] = useState(() => {
@@ -152,7 +153,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     storeDarkMode(dark);
-  }, [dark]);
+    storeScheme(scheme);
+    applyTheme(scheme, dark);
+  }, [dark, scheme]);
   useEffect(() => {
     const fn = () => setOffline(!navigator.onLine);
     window.addEventListener('online', fn);
@@ -856,55 +859,22 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           />
         </DialogContent>
       </Dialog>
-      <Dialog open={settings} onOpenChange={setSettings}>
-        <DialogContent className="settings-dialog">
-          <DialogTitle>Dein Atelier, deine Werkzeuge.</DialogTitle>
-          <DialogDescription>
-            Aktiviere die Module, die du für dieses Buch brauchst. Deine Inhalte
-            bleiben beim Abschalten erhalten.
-          </DialogDescription>
-          <DefaultAuthorSettings
-            library={library}
-            setLibrary={setLibrary}
-            disabled={!!saveError}
-          />
-          {modules
-            .filter((m) => !m.core)
-            .map((m) => (
-              <div className="module-toggle" key={m.id}>
-                <span>
-                  <strong>{m.label}</strong>
-                  <small>{m.description}</small>
-                </span>
-                <Switch
-                  checked={p.enabled.includes(m.id)}
-                  onCheckedChange={(checked) => {
-                    update((p) => ({
-                      ...p,
-                      enabled: checked
-                        ? [...p.enabled, m.id]
-                        : p.enabled.filter((id) => id !== m.id),
-                    }));
-                    if (!checked && view === m.id) setView('write');
-                  }}
-                  aria-label={m.label}
-                />
-              </div>
-            ))}
-          <div className="install-help">
-            <strong>Auf deinen Homescreen</strong>
-            <p>
-              Auf iPhone und iPad in Safari: Teilen → Zum Home-Bildschirm → Als
-              Web-App öffnen. Nach dem ersten vollständigen Laden kannst du
-              offline schreiben.
-            </p>
-            <p>
-              Projekte bleiben auf diesem Gerät. Über „Projekte & Export“ kannst
-              du Sicherungen auf andere Geräte übertragen.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SettingsDialog
+        open={settings}
+        setOpen={setSettings}
+        library={library}
+        setLibrary={setLibrary}
+        project={p}
+        update={update}
+        dark={dark}
+        setDark={setDark}
+        scheme={scheme}
+        setScheme={setScheme}
+        error={!!saveError}
+        onModuleDisabled={(id) => {
+          if (view === id) setView('write');
+        }}
+      />
       {notice && <output className="toast">{notice}</output>}
     </SidebarProvider>
   );
