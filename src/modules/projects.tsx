@@ -1,3 +1,5 @@
+import { AuthorFields } from './authors';
+import { applyDefaultAuthor, setDefaultAuthor } from '../core/authors';
 import { ProjectGallery } from './project-gallery';
 import { CoverEditor } from './covers';
 import { setProjectCover } from '../core/cover-data';
@@ -86,7 +88,10 @@ export function ProjectDialog({
         throw Error('Datei zu groß (maximal 30 MB).');
       const text = await file.text();
       if (file.name.match(/\.(md|txt)$/i)) {
-        const p = newProject(file.name.replace(/\.[^.]+$/, ''));
+        const p = applyDefaultAuthor(
+          newProject(file.name.replace(/\.[^.]+$/, '')),
+          library.defaultAuthor,
+        );
         p.scenes[0].text = text;
         p.scenes[0].status = 'Entwurf';
         setLibrary((l) => ({
@@ -105,8 +110,19 @@ export function ProjectDialog({
             ]),
           ].map((id) => [id, uid()]),
         );
+        const importDefault =
+          library.defaultAuthor ?? imported.defaultAuthor ?? '';
         const projects = imported.projects.map((p) => ({
-          ...p,
+          ...applyDefaultAuthor(
+            {
+              ...p,
+              authorOverride:
+                p.authorOverride === true ||
+                (p.authorOverride !== false && !!p.author.trim()) ||
+                (!!p.author.trim() && p.author !== importDefault),
+            },
+            importDefault,
+          ),
           id: ids.get(p.id)!,
         }));
         const snapshots = imported.snapshots.map((s) => ({
@@ -114,12 +130,18 @@ export function ProjectDialog({
           id: uid(),
           project: { ...s.project, id: ids.get(s.project.id)! },
         }));
-        setLibrary((l) => ({
-          ...l,
-          projects: [...l.projects, ...projects],
-          active: projects[0].id,
-          snapshots: [...snapshots, ...l.snapshots],
-        }));
+        setLibrary((l) => {
+          const base = setDefaultAuthor(
+            l,
+            l.defaultAuthor ?? imported.defaultAuthor ?? '',
+          );
+          return {
+            ...base,
+            projects: [...base.projects, ...projects],
+            active: projects[0].id,
+            snapshots: [...snapshots, ...base.snapshots],
+          };
+        });
         select(projects[0].scenes[0].id);
       }
       setMessage('Importiert. Bestehende Projekte bleiben erhalten.');
@@ -270,7 +292,10 @@ export function ProjectDialog({
               e.preventDefault();
               setLibrary((l) => ({
                 ...l,
-                projects: [...l.projects, draft],
+                projects: [
+                  ...l.projects,
+                  applyDefaultAuthor(draft, l.defaultAuthor),
+                ],
                 active: draft.id,
               }));
               select(draft.scenes[0].id);
@@ -309,6 +334,17 @@ export function ProjectDialog({
                 })
               }
             />
+            {!isOther(draft) && (
+              <AuthorFields
+                project={applyDefaultAuthor(draft, library.defaultAuthor)}
+                defaultAuthor={library.defaultAuthor || ''}
+                update={(fn) =>
+                  setDraft((d) =>
+                    fn(applyDefaultAuthor(d, library.defaultAuthor)),
+                  )
+                }
+              />
+            )}
             <LimitFields project={draft} update={(fn) => setDraft(fn)} />
             {!isStandalone(draft) && (
               <SeriesFields
@@ -337,15 +373,11 @@ export function ProjectDialog({
             />
           </label>
           {!isOther(project) && (
-            <label className="field-label">
-              AUTOR / AUTORIN
-              <input
-                value={project.author}
-                onChange={(e) =>
-                  update((p) => ({ ...p, author: e.target.value }))
-                }
-              />
-            </label>
+            <AuthorFields
+              project={project}
+              defaultAuthor={library.defaultAuthor || ''}
+              update={update}
+            />
           )}
         </div>
         <ProjectModeSettings

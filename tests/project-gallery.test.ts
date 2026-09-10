@@ -81,3 +81,24 @@ void test('other is one unconstrained text, with recoverable conversion and titl
   bad.projects[0].scenes.push({ ...p.scenes[0], id: 'another' });
   assert.throws(() => validateLibrary(bad));
 });
+void test('alphabetic sorting groups series by title and naturally orders volumes without splitting namesakes', () => {
+  const book = (title: string, series: string, volume: string) => ({
+    ...newProject(title),
+    series: { enabled: !!series, title: series, volume },
+  });
+  const projects = [
+    book('Anfang', 'Saga', '10'),
+    book('Zukunft', ' saga ', '2'),
+    book('Saga', '', ''),
+    book('Mitte', 'Saga', '1'),
+    book('Ohne Band', 'Saga', ''),
+    book('Apfel', '', ''),
+    book('Andere', 'Welt', '1'),
+  ];
+  const sorted = visibleProjects(projects, 'all', 'alphabet');
+  assert.deepEqual(
+    sorted.map((p) => p.title),
+    ['Apfel', 'Mitte', 'Zukunft', 'Anfang', 'Ohne Band', 'Saga', 'Andere'],
+  );
+  assert.deepEqual(visibleProjects(projects, 'all', 'manual'), projects);
+});

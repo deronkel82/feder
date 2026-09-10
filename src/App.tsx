@@ -1,3 +1,4 @@
+import { DefaultAuthorSettings } from './modules/authors';
 import { ProjectCover } from './modules/covers';
 import { isOther, isStandalone, usesScenes } from './core/project-format';
 import { WritingProgress } from './modules/writing-progress';
@@ -862,6 +863,11 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             Aktiviere die Module, die du für dieses Buch brauchst. Deine Inhalte
             bleiben beim Abschalten erhalten.
           </DialogDescription>
+          <DefaultAuthorSettings
+            library={library}
+            setLibrary={setLibrary}
+            disabled={!!saveError}
+          />
           {modules
             .filter((m) => !m.core)
             .map((m) => (

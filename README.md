@@ -39,6 +39,11 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.6.1
+
+- Alphabetische Sortierung hält Reihen unter ihrem Reihentitel zusammen und sortiert darunter natürlich nach Band (1, 2, 10). Bände ohne Angabe stehen am Ende ihrer Reihe.
+- Standard-Autor in den Einstellungen: Neue und nicht individuell überschriebene Projekte übernehmen den Namen. Eine Checkbox entsperrt das Autorenfeld für abweichende Angaben. Bestehende Namen bleiben erhalten; die Vorgabe ist Teil der lokalen Bibliothek und JSON-Sicherung.
+
 ## Neu in 0.6.0
 
 - Projektbibliothek auf Vollbild umschalten, Cover in drei Größen anzeigen.

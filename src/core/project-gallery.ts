@@ -1,5 +1,9 @@
 import type { Project, Library } from './model.ts';
-import { projectFormat, type ProjectFormat } from './project-format.ts';
+import {
+  isStandalone,
+  projectFormat,
+  type ProjectFormat,
+} from './project-format.ts';
 export type ProjectSort = 'manual' | 'alphabet' | 'updated';
 export function visibleProjects(
   projects: Project[],
@@ -9,13 +13,33 @@ export function visibleProjects(
   const result = projects.filter(
     (p) => filter === 'all' || projectFormat(p) === filter,
   );
-  if (sort === 'alphabet')
-    result.sort((a, b) =>
-      a.title.localeCompare(b.title, 'de', {
-        numeric: true,
-        sensitivity: 'base',
-      }),
-    );
+  if (sort === 'alphabet') {
+    const collator = new Intl.Collator('de', {
+      numeric: true,
+      sensitivity: 'base',
+    });
+    const compare = (a: string, b: string) => collator.compare(a, b);
+    const series = (p: Project) =>
+      !isStandalone(p) && p.series.enabled
+        ? p.series.title.trim().replace(/\s+/g, ' ')
+        : '';
+    result.sort((a, b) => {
+      const sa = series(a),
+        sb = series(b);
+      const group = compare(sa || a.title.trim(), sb || b.title.trim());
+      if (group) return group;
+      // A standalone title equal to a series name must not split that series.
+      if (!!sa !== !!sb) return sa ? -1 : 1;
+      if (sa && sb) {
+        const va = a.series.volume.trim(),
+          vb = b.series.volume.trim();
+        if (!!va !== !!vb) return va ? -1 : 1;
+        const volume = compare(va, vb);
+        if (volume) return volume;
+      }
+      return compare(a.title, b.title);
+    });
+  }
   if (sort === 'updated')
     result.sort(
       (a, b) => (Date.parse(b.updated) || 0) - (Date.parse(a.updated) || 0),

@@ -33,6 +33,7 @@ export type Project = {
   id: string;
   title: string;
   author: string;
+  authorOverride?: boolean;
   target: number;
   scenes: Scene[];
   cards: Card[];
@@ -50,6 +51,7 @@ export type Snapshot = {
 };
 export type Library = {
   version: 2;
+  defaultAuthor?: string;
   projects: Project[];
   active: string;
   snapshots: Snapshot[];
@@ -166,6 +168,8 @@ export function validateLibrary(data: unknown): Library {
     !Array.isArray(d.snapshots)
   )
     throw Error('Keine gültige Feder-Sicherung.');
+  if (d.defaultAuthor !== undefined && !str(d.defaultAuthor))
+    throw Error('Ungültiger Standard-Autor.');
   const ids = new Set<string>();
   for (const p of d.projects) {
     if (
@@ -199,6 +203,8 @@ export function validateLibrary(data: unknown): Library {
     if (
       (p.format !== undefined &&
         !['novel', 'novella', 'short', 'other'].includes(p.format)) ||
+      (p.authorOverride !== undefined &&
+        typeof p.authorOverride !== 'boolean') ||
       (p.sceneMode !== undefined && typeof p.sceneMode !== 'boolean') ||
       (p.wordLimitEnabled !== undefined &&
         typeof p.wordLimitEnabled !== 'boolean') ||

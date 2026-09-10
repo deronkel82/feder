@@ -1,3 +1,4 @@
+import { applyDefaultAuthor } from './authors.ts';
 import { newProject, type Library } from './model.ts';
 import { withSnapshot } from './history.ts';
 export function deletedProjects(l: Library) {
@@ -14,7 +15,10 @@ export function deleteProject(l: Library, id: string): Library {
   if (!p) throw Error('Projekt nicht gefunden.');
   const next = withSnapshot(l, p, 'Vor Löschen des Projekts', 'delete');
   const projects = l.projects.filter((p) => p.id !== id);
-  if (!projects.length) projects.push(newProject('Neues Projekt'));
+  if (!projects.length)
+    projects.push(
+      applyDefaultAuthor(newProject('Neues Projekt'), l.defaultAuthor),
+    );
   return {
     ...next,
     projects,

@@ -1,7 +1,9 @@
+import { seriesLabel } from './series';
 import { useState, useRef } from 'react';
 import { GripVertical, ArrowLeft, ArrowRight } from 'lucide-react';
 import type { Library } from '../core/model';
 import {
+  isStandalone,
   formatNames,
   projectFormat,
   type ProjectFormat,
@@ -104,7 +106,7 @@ export function ProjectGallery({
             onChange={(e) => setSort(e.target.value as ProjectSort)}
           >
             <option value="manual">Freie Reihenfolge</option>
-            <option value="alphabet">Alphabet (A–Z)</option>
+            <option value="alphabet">Alphabet · Reihe · Band</option>
             <option value="updated">Zuletzt geändert</option>
           </select>
         </label>
@@ -148,6 +150,9 @@ export function ProjectGallery({
               <span className="project-card-caption">
                 <strong>{p.title || 'Ohne Titel'}</strong>
                 <small>{formatNames[projectFormat(p)]}</small>
+                {!isStandalone(p) && p.series.enabled && (
+                  <small>{seriesLabel(p.series)}</small>
+                )}
               </span>
               {p.id === library.active && (
                 <small className="project-active-badge">Aktiv</small>
