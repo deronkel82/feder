@@ -1,17 +1,36 @@
-import type { Project, Library } from './model.ts';
+import type { Project, Library, Scene } from './model.ts';
 import {
   isStandalone,
   projectFormat,
   type ProjectFormat,
 } from './project-format.ts';
+export const projectStatuses = [
+  'Idee',
+  'Entwurf',
+  'Überarbeitung',
+  'Fertig',
+] as const;
+export type ProjectStatus = Scene['status'];
+export function projectStatus(p: Project): ProjectStatus {
+  if (p.scenes.length && p.scenes.every((s) => s.status === 'Fertig'))
+    return 'Fertig';
+  if (p.scenes.some((s) => s.status === 'Überarbeitung'))
+    return 'Überarbeitung';
+  if (p.scenes.some((s) => s.status !== 'Idee' || s.text.trim()))
+    return 'Entwurf';
+  return 'Idee';
+}
 export type ProjectSort = 'manual' | 'alphabet' | 'updated';
 export function visibleProjects(
   projects: Project[],
   filter: ProjectFormat | 'all',
   sort: ProjectSort,
+  statuses: readonly ProjectStatus[] = projectStatuses,
 ) {
   const result = projects.filter(
-    (p) => filter === 'all' || projectFormat(p) === filter,
+    (p) =>
+      (filter === 'all' || projectFormat(p) === filter) &&
+      statuses.includes(projectStatus(p)),
   );
   if (sort === 'alphabet') {
     const collator = new Intl.Collator('de', {

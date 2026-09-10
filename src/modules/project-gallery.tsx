@@ -10,6 +10,9 @@ import {
 } from '../core/project-format';
 import {
   visibleProjects,
+  projectStatus,
+  projectStatuses,
+  type ProjectStatus,
   moveProject,
   type ProjectSort,
 } from '../core/project-gallery';
@@ -65,11 +68,35 @@ export function ProjectGallery({
     'manual',
     ['manual', 'alphabet', 'updated'],
   );
+  const [statuses, setStatuses] = useState<readonly ProjectStatus[]>(() => {
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem('feder.gallery.statuses') || 'null',
+      );
+      return Array.isArray(stored) &&
+        stored.every((s) => projectStatuses.includes(s))
+        ? stored
+        : projectStatuses;
+    } catch {
+      return projectStatuses;
+    }
+  });
+  function toggleStatus(status: ProjectStatus, checked: boolean) {
+    const next = projectStatuses.filter((s) =>
+      s === status ? checked : statuses.includes(s),
+    );
+    setStatuses(next);
+    try {
+      localStorage.setItem('feder.gallery.statuses', JSON.stringify(next));
+    } catch {
+      /* preference only */
+    }
+  }
   const [dragging, setDragging] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const gallery = useRef<HTMLDivElement>(null);
-  const list = visibleProjects(library.projects, filter, sort);
+  const list = visibleProjects(library.projects, filter, sort, statuses);
   function move(id: string, to: string) {
     setLibrary((l) => moveProject(l, id, to));
     setMessage('Reihenfolge gespeichert.');
@@ -122,6 +149,19 @@ export function ProjectGallery({
           </select>
         </label>
       </div>
+      <fieldset className="gallery-status-filters">
+        <legend>Status</legend>
+        {projectStatuses.map((status) => (
+          <label key={status}>
+            <input
+              type="checkbox"
+              checked={statuses.includes(status)}
+              onChange={(e) => toggleStatus(status, e.target.checked)}
+            />
+            {status}
+          </label>
+        ))}
+      </fieldset>
       <p className="muted small">
         {list.length} von {library.projects.length} Projekten
         {sort === 'manual'
@@ -140,6 +180,15 @@ export function ProjectGallery({
           >
             <button
               className="gallery-select"
+              title={[
+                p.title || 'Ohne Titel',
+                formatNames[projectFormat(p)],
+                !isStandalone(p) && p.series.enabled
+                  ? seriesLabel(p.series)
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
               aria-pressed={p.id === library.active}
               onClick={() => {
                 setLibrary((l) => ({ ...l, active: p.id }));
@@ -150,9 +199,17 @@ export function ProjectGallery({
               <span className="project-card-caption">
                 <strong>{p.title || 'Ohne Titel'}</strong>
                 <small>{formatNames[projectFormat(p)]}</small>
-                {!isStandalone(p) && p.series.enabled && (
-                  <small>{seriesLabel(p.series)}</small>
-                )}
+                <small
+                  className="gallery-project-status"
+                  title={projectStatus(p)}
+                >
+                  {projectStatus(p)}
+                </small>
+                <small>
+                  {!isStandalone(p) && p.series.enabled
+                    ? seriesLabel(p.series)
+                    : ''}
+                </small>
               </span>
               {p.id === library.active && (
                 <small className="project-active-badge">Aktiv</small>
@@ -221,8 +278,8 @@ export function ProjectGallery({
       </div>
       {!list.length && (
         <p>
-          Keine Projekte dieser Art. Wähle einen anderen Filter oder lege ein
-          Projekt an.
+          Keine Projekte für diese Filter. Wähle einen anderen Filter oder lege
+          ein Projekt an.
         </p>
       )}
       {!list.some((p) => p.id === library.active) && (

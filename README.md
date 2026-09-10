@@ -39,6 +39,12 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.6.2
+
+- Vier kombinierbare Statusfilter: Idee, Entwurf, Überarbeitung und Fertig. Der Projektstatus folgt dem Manuskript: alle Texte fertig → Fertig; mindestens ein Text in Überarbeitung → Überarbeitung; begonnene Texte → Entwurf; sonst Idee. Die Filterauswahl bleibt auf dem Gerät gespeichert.
+
+- Einheitliche Projektkacheln in allen drei Covergrößen: feste Bereiche für Titel, Projektart und Reihe; Verschiebe-Buttons bündig am unteren Rand. Lange Angaben werden auf zwei Zeilen gekürzt, die vollständigen Angaben bleiben in den Projekteinstellungen und als Tooltip verfügbar.
+
 ## Neu in 0.6.1
 
 - Alphabetische Sortierung hält Reihen unter ihrem Reihentitel zusammen und sortiert darunter natürlich nach Band (1, 2, 10). Bände ohne Angabe stehen am Ende ihrer Reihe.

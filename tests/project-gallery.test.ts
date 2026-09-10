@@ -102,3 +102,33 @@ void test('alphabetic sorting groups series by title and naturally orders volume
   );
   assert.deepEqual(visibleProjects(projects, 'all', 'manual'), projects);
 });
+void test('status filters combine with type and sort; all finished is required for a finished project', async () => {
+  const { projectStatus, projectStatuses } =
+    await import('../src/core/project-gallery.ts');
+  const idea = newProject('Idee');
+  const draft = newProject('Entwurf');
+  draft.scenes[0].text = 'Begonnen';
+  const revision = newProject('Überarbeitung');
+  revision.scenes[0].status = 'Überarbeitung';
+  const done = newProject('Fertig');
+  done.scenes[0].status = 'Fertig';
+  done.format = 'short';
+  const projects = [idea, draft, revision, done];
+  assert.deepEqual(projects.map(projectStatus), projectStatuses);
+  assert.deepEqual(
+    visibleProjects(projects, 'all', 'manual', ['Idee', 'Fertig']),
+    [idea, done],
+  );
+  assert.deepEqual(visibleProjects(projects, 'short', 'alphabet', ['Fertig']), [
+    done,
+  ]);
+  assert.deepEqual(
+    visibleProjects(projects, 'novel', 'alphabet', ['Fertig']),
+    [],
+  );
+  assert.deepEqual(visibleProjects(projects, 'all', 'manual', []), []);
+  done.scenes.push({ ...idea.scenes[0], id: 'unfinished' });
+  assert.equal(projectStatus(done), 'Entwurf');
+  done.scenes[1].status = 'Überarbeitung';
+  assert.equal(projectStatus(done), 'Überarbeitung');
+});
