@@ -2923,3 +2923,37 @@ select:focus-visible {
   font-weight: 800;
   margin-left: 2px;
 }
+
+.release-history {
+  margin-top: 16px;
+}
+.release-history > summary,
+.release-entry > summary {
+  cursor: pointer;
+  padding: 12px 4px;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.release-history summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.release-entry {
+  border-top: 1px solid var(--border);
+}
+.release-heading {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  vertical-align: top;
+  width: calc(100% - 28px);
+}
+.release-entry ul {
+  padding-left: 24px;
+  margin: 4px 0 18px;
+}
+.release-entry li {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}

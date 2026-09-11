@@ -39,6 +39,15 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Eine optionale Synchronisierung über dein eigenes Google Drive lässt sich unter Einstellungen → Sync einschalten. Ohne Verbindung bleibt alles lokal. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.9.2
+
+- Sync und App-Updates verwenden unterschiedliche Symbole: Wolke für Drive, Download-Pfeil für App-Updates.
+- Einstellungen → App & Daten → Updates → Versionshistorie: alle veröffentlichten Versionen seit 0.1.0, einzeln aufklappbar, neueste zuerst und offline lesbar.
+
+### Versionshistorie pflegen
+
+Bei jeder Veröffentlichung einen neuen Eintrag mit Version, Datum, Kurztitel und verständlichen Änderungen oben in `src/core/releases.json` ergänzen und die Version in `package.json` und `package-lock.json` anheben. Historische Einträge bleiben erhalten. Die Versionsanzeige und die Historie verwenden dieselbe Quelle. Der Build prüft Reihenfolge, Pflichtfelder und Übereinstimmung mit der Paketversion und bricht bei fehlendem aktuellem Eintrag ab.
+
 ## Neu in 0.9.1
 
 - Vollständige Lizenz- und Urheberhinweise unter Einstellungen → App & Daten → Lizenzen & Quellen. Auch direkt beim Thesaurus verlinkt und nach vollständigem Laden offline verfügbar.

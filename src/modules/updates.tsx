@@ -1,6 +1,7 @@
+import releases from '../core/releases.json';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RefreshCw } from 'lucide-react';
+import { Download } from 'lucide-react';
 import {
   Popover,
   PopoverTrigger,
@@ -153,12 +154,12 @@ export function UpdateNotice({
               : 'Version und Updates öffnen'
           }
         >
-          <RefreshCw size={17} />
-          <span className="update-version">0.9.1</span>
+          <Download size={17} />
+          <span className="update-version">{releases[0].version}</span>
           {updates.waiting && <span className="update-dot" />}
         </PopoverTrigger>
         <PopoverContent align="end" sideOffset={10} className="update-popover">
-          <PopoverTitle>Feder 0.9.1</PopoverTitle>
+          <PopoverTitle>Feder {releases[0].version}</PopoverTitle>
           <PopoverDescription>
             {updates.waiting
               ? 'Eine neue Version steht bereit.'

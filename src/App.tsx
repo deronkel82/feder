@@ -20,7 +20,7 @@ import {
   Plus,
   Search,
   Settings2,
-  RefreshCw,
+  CloudUpload,
   Focus,
   PanelRight,
   Check,
@@ -466,7 +466,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   setSettings(true);
                 }}
               >
-                <RefreshCw size={18} />
+                <CloudUpload size={18} />
                 {driveSync.attention && <span aria-hidden="true">!</span>}
               </button>
               <UpdateNotice updates={updates} />

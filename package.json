@@ -1,13 +1,13 @@
 {
   "name": "feder-schreibatelier",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vite --config vite.pages.config.ts",
-    "build": "vite build --config vite.pages.config.ts && node scripts/service-worker.mjs",
+    "build": "node scripts/check-releases.mjs && vite build --config vite.pages.config.ts && node scripts/service-worker.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",

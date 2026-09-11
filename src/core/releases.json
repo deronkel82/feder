@@ -1,0 +1,173 @@
+[
+  {
+    "version": "0.9.2",
+    "date": "2026-09-11",
+    "title": "Symbole & Versionshistorie",
+    "changes": [
+      "Sync hat ein Wolkensymbol, App-Updates einen Download-Pfeil.",
+      "Aufklappbare Versionshistorie in den Einstellungen, von der ersten Veröffentlichung bis heute."
+    ]
+  },
+  {
+    "version": "0.9.1",
+    "date": "2026-09-11",
+    "title": "Lizenzen & Quellen",
+    "changes": [
+      "Vollständige Lizenztexte und Urheberhinweise für eingebundene Bibliotheken und OpenThesaurus.",
+      "Offline-Lizenzseite; Hinweise werden bei jedem Build automatisch erzeugt."
+    ]
+  },
+  {
+    "version": "0.9.0",
+    "date": "2026-09-11",
+    "title": "Google-Drive-Synchronisierung",
+    "changes": [
+      "Private Bibliothek mit dem eigenen Google-Konto zwischen Geräten abgleichen; optional automatisch bei geöffneter App.",
+      "Lokale Sicherung vor Übernahmen und Konfliktkopien bei gleichzeitigen Änderungen.",
+      "Projekte, Cover, Versionen, Kommentare, Vorlagen und Romanwelten werden berücksichtigt."
+    ]
+  },
+  {
+    "version": "0.8.0",
+    "date": "2026-09-10",
+    "title": "Überarbeiten & zusammenhängende Projekte",
+    "changes": [
+      "Versionsvergleich und Suchen & Ersetzen mit Vorschau.",
+      "Papierkorb mit endgültigem Löschen, manueller Projektstatus und Projektvorlagen.",
+      "Projektübergreifende Romanwelten und Kommentare an Textstellen.",
+      "Einstellbare Schriftgröße, Zeilenabstände, große Bedienelemente und reduzierte Animationen."
+    ]
+  },
+  {
+    "version": "0.7.0",
+    "date": "2026-09-10",
+    "title": "Farbschemata & Einstellungen",
+    "changes": [
+      "Fünf Farbschemata mit Hell- und Dunkelvarianten.",
+      "Einstellungen in übersichtliche Bereiche gegliedert."
+    ]
+  },
+  {
+    "version": "0.6.2",
+    "date": "2026-09-10",
+    "title": "Projektstatus & einheitliche Kacheln",
+    "changes": [
+      "Projektfilter für Idee, Entwurf, Überarbeitung und Fertig, miteinander kombinierbar.",
+      "Gleich große Projektkacheln mit bündigen Verschiebe-Schaltflächen in allen drei Covergrößen."
+    ]
+  },
+  {
+    "version": "0.6.1",
+    "date": "2026-09-10",
+    "title": "Reihensortierung & Standard-Autor",
+    "changes": [
+      "Alphabetische Sortierung hält Buchreihen zusammen und ordnet ihre Bände natürlich.",
+      "Standard-Autor in den Einstellungen, mit optionaler Abweichung pro Projekt."
+    ]
+  },
+  {
+    "version": "0.6.0",
+    "date": "2026-09-10",
+    "title": "Große Projektbibliotheken",
+    "changes": [
+      "Vollbildansicht und drei Covergrößen.",
+      "Filter nach Projektart, alphabetische Sortierung, Änderungssortierung und freie Reihenfolge per Ziehen oder Pfeilen.",
+      "Projektart Sonstiges: Überschrift und Text ohne weitere Vorgaben."
+    ]
+  },
+  {
+    "version": "0.5.0",
+    "date": "2026-09-10",
+    "title": "Buchcover & Projektauswahl",
+    "changes": [
+      "Projektverwaltung vollständig in die obere Werkzeugleiste verlegt.",
+      "Eigene Buchcover hinzufügen, ersetzen und entfernen; lokale Bildverkleinerung."
+    ]
+  },
+  {
+    "version": "0.4.2",
+    "date": "2026-09-05",
+    "title": "Projekte löschen & wiederherstellen",
+    "changes": [
+      "Projekte können gelöscht und aus gesicherten Ständen wiederhergestellt werden.",
+      "Nach dem Löschen des letzten Projekts bleibt ein leeres Projekt."
+    ]
+  },
+  {
+    "version": "0.4.1",
+    "date": "2026-09-05",
+    "title": "Mehr Platz in der Seitenleiste",
+    "changes": [
+      "Projekte & Export sowie Module & Einstellungen in die obere Werkzeugleiste verlegt.",
+      "Wort- und Zeichenzählung bleiben unten sichtbar."
+    ]
+  },
+  {
+    "version": "0.4.0",
+    "date": "2026-09-05",
+    "title": "Projektarten & Textstruktur",
+    "changes": [
+      "Roman, Novelle/Erzählung oder Kurzgeschichte beim Anlegen wählen.",
+      "Optional ein zusammenhängender Text pro Kapitel ohne separate Szenen.",
+      "Wort- und Zeichenzählung sowie optionale Obergrenzen für Kurzgeschichten."
+    ]
+  },
+  {
+    "version": "0.3.0",
+    "date": "2026-09-05",
+    "title": "Gliederung & Planung",
+    "changes": [
+      "Einklappbare Werkzeuge, Teile und Kapitel für eine übersichtliche Navigation.",
+      "Kapitelnummern, benannte Teile/Akte sowie unnummerierte Prologe und Epiloge.",
+      "Ideen als neue Szene oder neues Kapitel ins Manuskript übernehmen."
+    ]
+  },
+  {
+    "version": "0.2.3",
+    "date": "2026-09-05",
+    "title": "Verbesserte Namenserkennung",
+    "changes": [
+      "Personen und Orte manuell erneut erkennen, mit Prüfstatus und Uhrzeit.",
+      "Weniger gewöhnliche Nomen als Fehlvorschläge; bessere Erkennung ausdrücklich genannter Namen."
+    ]
+  },
+  {
+    "version": "0.2.2",
+    "date": "2026-09-05",
+    "title": "Dunkelmodus & Strukturverwaltung",
+    "changes": [
+      "Dunkelmodus wird auf dem Gerät gemerkt.",
+      "Kapitel und Szenen umbenennen, verschieben, umwandeln und löschen; vorherige Versionssicherung."
+    ]
+  },
+  {
+    "version": "0.2.1",
+    "date": "2026-09-05",
+    "title": "Kompakte Update-Anzeige",
+    "changes": [
+      "Versionsanzeige und Update-Bedienung in die obere Werkzeugleiste verlegt."
+    ]
+  },
+  {
+    "version": "0.2.0",
+    "date": "2026-09-05",
+    "title": "Updates, Buchreihen & Versionen",
+    "changes": [
+      "App-Updates mit vorheriger Sicherung und Schutz vor parallelen Fenstern.",
+      "Buchreihen mit Reihentitel und Bandangabe.",
+      "Benannte Versionsstände und Sicherungen bei Überarbeitungen.",
+      "Erste lokale Vorschläge für Personen und Orte sowie sichere Umstellung des Datenformats."
+    ]
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-09-05",
+    "title": "Erste Veröffentlichung",
+    "changes": [
+      "Modulares Schreibatelier mit Projekten, Kapiteln, Szenen, Ideen, Figuren und Orten.",
+      "Stilanalyse und lokale OpenThesaurus-Synonyme.",
+      "Lokales Speichern, Offline-Nutzung als Homescreen-App und Exporte als JSON, Markdown, Text, EPUB oder Druck/PDF.",
+      "Prüfungen für Datenspeicherung und Exporte sowie erste Verbesserungen der Barrierefreiheit."
+    ]
+  }
+]

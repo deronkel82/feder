@@ -15,6 +15,8 @@ import { schemes, type Scheme } from '../core/themes';
 import { isOther } from '../core/project-format';
 import { modules } from './registry';
 import type { Project, Library } from '../core/model';
+import { ReleaseHistory } from './release-history';
+
 export function SettingsDialog({
   initialSection,
   sync,
@@ -201,6 +203,7 @@ export function SettingsDialog({
                 prüfen und installieren. Vor dem Neustart wird deine Arbeit
                 gesichert.
               </p>
+              <ReleaseHistory />
             </section>
             <section className="settings-info">
               <h3>Lizenzen & Quellen</h3>
