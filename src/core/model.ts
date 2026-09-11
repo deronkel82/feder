@@ -1,3 +1,10 @@
+import {
+  validPosition,
+  validExport,
+  type ReadingPosition,
+  type ReviewPass,
+  type ExportPreset,
+} from './workbench.ts';
 import type { TextComment } from './text-tools.ts';
 import type { ProjectTemplate, SharedWorld } from './library-tools.ts';
 import { validCover } from './cover-data.ts';
@@ -15,6 +22,7 @@ export type Scene = {
   notes: string;
 };
 export type Card = {
+  aliases?: string[];
   manuscriptSceneId?: string;
   id: string;
   title: string;
@@ -25,6 +33,10 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  readingPosition?: ReadingPosition;
+  reviewPasses?: ReviewPass[];
+  exportPresets?: ExportPreset[];
+  syncResolved?: boolean;
   manualStatus?: Scene['status'];
   worldId?: string;
   cover?: string;
@@ -222,6 +234,33 @@ export function validateLibrary(data: unknown): Library {
           p.charTarget > 100000000))
     )
       throw Error('Ungültige Projektart oder Zeichenbegrenzung.');
+    if (p.readingPosition !== undefined && !validPosition(p.readingPosition))
+      throw Error('Ungültige Leseposition.');
+    if (p.syncResolved !== undefined && typeof p.syncResolved !== 'boolean')
+      throw Error('Ungültiger Konfliktstatus.');
+    if (
+      p.reviewPasses !== undefined &&
+      (!Array.isArray(p.reviewPasses) ||
+        p.reviewPasses.some(
+          (r) =>
+            !r ||
+            !str(r.id) ||
+            !str(r.title) ||
+            !Array.isArray(r.completed) ||
+            !r.completed.every(str) ||
+            !Array.isArray(r.checks) ||
+            r.checks.some((c) => !c || !str(c.id) || !str(c.text)),
+        ))
+    )
+      throw Error('Ungültige Überarbeitungsdurchgänge.');
+    if (
+      p.exportPresets !== undefined &&
+      (!Array.isArray(p.exportPresets) ||
+        p.exportPresets.some(
+          (e) => !e || !str(e.id) || !str(e.name) || !validExport(e.options),
+        ))
+    )
+      throw Error('Ungültige Exportvorlagen.');
     if (p.worldId !== undefined && !str(p.worldId))
       throw Error('Ungültige Romanwelt.');
     if (
@@ -303,6 +342,11 @@ export function validateLibrary(data: unknown): Library {
         'Ohne Szenenmethodik darf jedes Kapitel nur einen Text enthalten.',
       );
     for (const c of p.cards) {
+      if (
+        c.aliases !== undefined &&
+        (!Array.isArray(c.aliases) || !c.aliases.every(str))
+      )
+        throw Error('Ungültige Aliasnamen.');
       if (
         !c ||
         !['id', 'title', 'subtitle', 'text'].every((k) =>

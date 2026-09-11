@@ -1,3 +1,7 @@
+import { BookTools } from './modules/book-tools';
+import { WhatsNew } from './modules/whats-new';
+import { readPosition, useWritingPosition } from './modules/writing-position';
+import { SyncStatus } from './sync/status';
 import { useDriveSync } from './sync/use-drive-sync';
 import { SearchReplace, CommentsDialog } from './modules/text-review';
 import { SharedWorldPanel } from './modules/library-extras';
@@ -20,7 +24,6 @@ import {
   Plus,
   Search,
   Settings2,
-  CloudUpload,
   Focus,
   PanelRight,
   Check,
@@ -129,9 +132,21 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const saved = savedLibrary === library;
   const [sideOpen, setSideOpen] = useState(true);
   const [storedView, setView] = useState('write');
-  const [selected, setSelected] = useState(
-    library.projects.find((p) => p.id === library.active)!.scenes[0].id,
-  );
+  const [selectedState, setSelectedState] = useState({
+    projectId: '',
+    sceneId: '',
+  });
+  const selected =
+    selectedState.projectId === library.active &&
+    library.projects
+      .find((p) => p.id === library.active)
+      ?.scenes.some((s) => s.id === selectedState.sceneId)
+      ? selectedState.sceneId
+      : readPosition(library.active)?.sceneId || '';
+  const setSelected = (sceneId: string) =>
+    setSelectedState({ projectId: library.active, sceneId });
+  const [bookTools, setBookTools] = useState(false);
+  const [bookSection, setBookSection] = useState('overview');
   const [panel, setPanel] = useState(window.innerWidth >= 1200);
   const [focus, setFocus] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
@@ -168,6 +183,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   );
   const recognition = useEntities(recognitionProject, !isOther(p));
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
+  useWritingPosition(p.id, s.id, view === 'write', editor);
   const deferred = useDeferredValue(s.text);
   const findings = useMemo(() => analyze(deferred), [deferred]);
   useEffect(() => {
@@ -454,21 +470,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               >
                 <Settings2 size={18} />
               </button>
-              <button
-                className={driveSync.attention ? 'sync-attention' : ''}
-                title={driveSync.message || 'Google Drive synchronisieren'}
-                aria-label={
-                  'Google Drive: ' +
-                  (driveSync.message || 'Synchronisierung öffnen')
-                }
-                onClick={() => {
+              <SyncStatus
+                sync={driveSync}
+                open={() => {
                   setSettingsSection('sync');
                   setSettings(true);
                 }}
-              >
-                <CloudUpload size={18} />
-                {driveSync.attention && <span aria-hidden="true">!</span>}
-              </button>
+              />
               <UpdateNotice updates={updates} />
               <button
                 title="Darstellung wechseln"
@@ -506,6 +514,59 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               <div className="editor-area">
                 <div className="document-bar">
                   <div className="formatting">
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        setBookSection('overview');
+                        setBookTools(true);
+                      }}
+                    >
+                      Buchwerkzeuge
+                    </button>
+                    <details className="reading-position-menu">
+                      <summary>Leseposition</summary>
+                      <div>
+                        <p>
+                          Deine Stelle wird auf diesem Gerät automatisch
+                          gemerkt.
+                        </p>
+                        <button
+                          onClick={() => {
+                            const position = readPosition(p.id) || {
+                              sceneId: s.id,
+                              start: editor.current?.selectionStart || 0,
+                              end: editor.current?.selectionEnd || 0,
+                              scroll: 0,
+                              date: new Date().toISOString(),
+                            };
+                            update((p) => ({
+                              ...p,
+                              readingPosition: position,
+                            }));
+                            setNotice(
+                              'Leseposition geteilt. Jetzt synchronisieren, um sie am anderen Gerät zu öffnen.',
+                            );
+                          }}
+                        >
+                          Aktuelle Stelle für andere Geräte teilen
+                        </button>
+                        {p.readingPosition && (
+                          <button
+                            onClick={() => {
+                              const pos = p.readingPosition!;
+                              if (p.scenes.some((s) => s.id === pos.sceneId))
+                                jumpTo(pos.sceneId, pos.start, pos.end);
+                              else
+                                setNotice(
+                                  'Der zugehörige Text wurde entfernt. Bitte eine neue Stelle teilen.',
+                                );
+                            }}
+                          >
+                            Geteilte Stelle öffnen
+                          </button>
+                        )}
+                      </div>
+                    </details>
                     <button
                       className="text-button"
                       title="Suchen & Ersetzen"
@@ -946,6 +1007,20 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           }}
         />
       )}
+      <WhatsNew />
+      <BookTools
+        open={bookTools}
+        setOpen={setBookTools}
+        section={bookSection}
+        library={library}
+        project={p}
+        setLibrary={setLibrary}
+        disabled={!!saveError}
+        jump={(id, start, end) => {
+          setBookTools(false);
+          jumpTo(id, start, end);
+        }}
+      />
       <ProjectDialog
         open={projectDialog}
         setOpen={setProjectDialog}

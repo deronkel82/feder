@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.10.0",
+    "date": "2026-09-11",
+    "title": "Dein Schreibplatz – überblicken, finden und überarbeiten",
+    "changes": [
+      "Schreibposition wird pro Projekt auf dem Gerät gemerkt; eine Leseposition lässt sich für andere Geräte bereitstellen.",
+      "Sichtbarer Drive-Status zeigt ausstehende Änderungen, Offline-Betrieb und eine nötige Anmeldung.",
+      "Fassungen vergleichen und ausgewählte Textänderungen übernehmen – mit Sicherung beider Originale.",
+      "Projektweite Suche in Texten, Zusammenfassungen, Kommentaren und Karten, einschließlich gemeinsamer Romanwelt.",
+      "Aliasnamen für Figuren und Orte verwalten und verworfene Erkennungen einzeln wieder zulassen.",
+      "Eigene Überarbeitungsdurchgänge mit Prüfpunkten pro Kapitel.",
+      "Kapitelübersicht mit Zusammenfassungen, Perspektive, Status und Wortzahl.",
+      "Exportvorschau mit anpassbarem Layout und eigenen Vorlagen für Druck/PDF, HTML und EPUB.",
+      "Nach einem Update zeigt „Neu in Feder“ die Änderungen seit deiner zuletzt bestätigten Version."
+    ]
+  },
+  {
     "version": "0.9.2",
     "date": "2026-09-11",
     "title": "Symbole & Versionshistorie",

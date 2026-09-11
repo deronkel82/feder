@@ -28,6 +28,21 @@ export function useDriveSync(
   const [automatic, setAutomatic] = useState(
     () => preference('feder.sync.auto') === 'true',
   );
+  const [syncedLibrary, setSyncedLibrary] = useState<Library | null>(null);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [expires, setExpires] = useState(0);
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const onlineChanged = () => setOnline(navigator.onLine);
+    window.addEventListener('online', onlineChanged);
+    window.addEventListener('offline', onlineChanged);
+    const timer = setInterval(() => setClock(Date.now()), 15000);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('online', onlineChanged);
+      window.removeEventListener('offline', onlineChanged);
+    };
+  }, []);
   const [attention, setAttention] = useState(false);
   const [initial, setInitial] = useState<{ projects: number } | null>(null),
     [lastSync, setLastSync] = useState('');
@@ -47,6 +62,8 @@ export function useDriveSync(
     setClient(value);
     session.current = null;
     setAccount('');
+    setSyncedLibrary(null);
+    setExpires(0);
     setInitial(null);
     try {
       localStorage.setItem('feder.sync.client', value);
@@ -76,6 +93,9 @@ export function useDriveSync(
         ...auth,
         key: 'sync:' + clientId.trim() + ':' + user.permissionId,
       };
+      setExpires(auth.expires);
+      setSyncedLibrary(null);
+      setLastSync('');
       setAccount(user.emailAddress || user.displayName);
       setMessage(
         'Verbunden. Jetzt synchronisieren, um die Bibliotheken abzugleichen.',
@@ -196,6 +216,7 @@ export function useDriveSync(
         );
         setInitial(null);
         setLastSync(date);
+        setSyncedLibrary(result);
         let cleanupFailed = false;
         // Only delete records observed before our immutable commit. A simultaneous writer's new record is never removed.
         {
@@ -264,12 +285,36 @@ export function useDriveSync(
     if (running.current) return;
     session.current = null;
     setAccount('');
+    setSyncedLibrary(null);
+    setExpires(0);
     setInitial(null);
     setMessage(
       'Verbindung auf diesem Gerät getrennt. Lokale Daten und Drive-Daten bleiben erhalten.',
     );
   }
+  const status:
+    | 'offline'
+    | 'synced'
+    | 'busy'
+    | 'auth'
+    | 'attention'
+    | 'pending' = !online
+    ? 'offline'
+    : busy
+      ? 'busy'
+      : !account || expires < clock + 10000
+        ? 'auth'
+        : attention || initial
+          ? 'attention'
+          : syncedLibrary &&
+              (Object.keys(library) as (keyof Library)[]).every(
+                (key) =>
+                  key === 'active' || library[key] === syncedLibrary[key],
+              )
+            ? 'synced'
+            : 'pending';
   return {
+    status,
     clientId,
     attention,
     configure,

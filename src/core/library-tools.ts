@@ -16,6 +16,9 @@ export function saveTemplate(l: Library, p: Project, name: string): Library {
   const project: Project = {
     ...structuredClone(p),
     id: uid(),
+    readingPosition: undefined,
+    reviewPasses: undefined,
+    syncResolved: undefined,
     cover: undefined,
     worldId: undefined,
     manualStatus: undefined,

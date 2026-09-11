@@ -155,3 +155,13 @@ Keine vollständige Papyrus-Funktionsparität: keine Duden-Grammatikprüfung, ke
 ## Lizenz
 
 App-Code: [MIT](LICENSE). OpenThesaurus-Daten: **LGPL 2.1 oder später**, siehe [Drittanbieterhinweise](THIRD_PARTY.md). Feder steht in keiner Verbindung zu Papyrus oder dessen Herstellern.
+
+## Neu in 0.10.0
+
+Im Manuskript öffnet **Buchwerkzeuge** die projektweite Suche, Kapitelübersicht, eigenen Prüflisten, Aliasverwaltung und den Fassungsvergleich. Der Vergleich übernimmt ausgewählte Textabschnitte, sichert beide Ausgangsprojekte als Version und behält das Quellprojekt. Karten, Einstellungen und Löschungen werden dabei nicht automatisch zusammengeführt. Bei inzwischen geänderten Ausgangsprojekten muss der Vergleich neu geöffnet werden.
+
+Feder merkt Szene, Cursor und Scrollposition lokal pro Projekt. Unter **Leseposition** lässt sich eine Position ausdrücklich für andere Geräte bereitstellen; nach dem Drive-Abgleich kann sie dort geöffnet werden. Das vermeidet, dass zwei Geräte sich laufend gegenseitig die Position verstellen. Der sichtbare Sync-Status beschreibt den Stand seit dem letzten erfolgreichen Abgleich, keine permanente Live-Verbindung.
+
+Unter **Projekte & Export → Exportvorschau** lassen sich Schrift, Größe, Abstände, Überschriften und Titelseite einstellen und als Exportvorlage im Projekt speichern. Vorschau und HTML/Druck verwenden dasselbe Dokument. Die endgültigen PDF-Seitenumbrüche entstehen im Druckdialog; „Normseiten-Stil“ garantiert keine exakt 30 × 60 Zeichen. EPUB-Lesegeräte können Layout und Umbrüche selbst bestimmen.
+
+Nach einem Update erscheint **Neu in Feder** einmalig mit den Änderungen seit der zuletzt bestätigten Version. Die vollständige Historie bleibt unter **Einstellungen → App & Daten → Updates** verfügbar. Neue Veröffentlichungen müssen in `src/core/releases.json` eingetragen werden; der Build prüft die Übereinstimmung mit der Paketversion.

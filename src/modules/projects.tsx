@@ -1,3 +1,4 @@
+import { ExportPreview } from './export-preview';
 import { ProjectExtras, PurgeButton } from './library-extras';
 import { AuthorFields } from './authors';
 import { applyDefaultAuthor, setDefaultAuthor } from '../core/authors';
@@ -439,6 +440,12 @@ export function ProjectDialog({
         )}
         <h2 className="dialog-section">Mitnehmen & sichern</h2>
         <div className="export-grid">
+          <ExportPreview
+            key={project.id}
+            project={project}
+            update={update}
+            disabled={!!error}
+          />
           <button
             onClick={() =>
               download(JSON.stringify(library, null, 2), 'Feder-Sicherung.json')

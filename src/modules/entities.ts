@@ -96,8 +96,25 @@ export function detectEntities(project: Project): Entity[] {
   );
   for (const scene of project.scenes) {
     const text = scene.text;
+    const knownRanges: { start: number; end: number }[] = [];
     for (const card of known) {
-      const aliases = [card.title.trim()];
+      const aliases = [
+        card.title.trim(),
+        ...(card.aliases || [])
+          .map((a) => a.trim())
+          .filter(
+            (a) =>
+              a &&
+              !known.some(
+                (other) =>
+                  other.id !== card.id &&
+                  [other.title, ...(other.aliases || [])].some(
+                    (n) =>
+                      n.toLocaleLowerCase('de') === a.toLocaleLowerCase('de'),
+                  ),
+              ),
+          ),
+      ];
       const first = aliases[0].split(' ')[0];
       if (
         card.kind === 'Figur' &&
@@ -112,7 +129,8 @@ export function detectEntities(project: Project): Entity[] {
           .join('|')})${end}`,
         'gu',
       );
-      for (const m of text.matchAll(pattern))
+      for (const m of text.matchAll(pattern)) {
+        knownRanges.push({ start: m.index!, end: m.index! + m[0].length });
         mentions.push({
           name: card.title.trim(),
           kind: card.kind as Entity['kind'],
@@ -122,13 +140,18 @@ export function detectEntities(project: Project): Entity[] {
           knownId: card.id,
           strong: true,
         });
+      }
     }
     for (const rule of rules) {
       for (const m of text.matchAll(rule.pattern)) {
         const name = m[1];
         const first = name.split(' ')[0].toLocaleLowerCase('de');
         const at = m.index! + m[0].indexOf(name);
-        if (stopWords.has(first)) continue;
+        if (
+          stopWords.has(first) ||
+          knownRanges.some((r) => at >= r.start && at < r.end)
+        )
+          continue;
         if (!rule.strong) {
           if (commonNouns.has(first)) continue;
           const prefix = text.slice(Math.max(0, at - 35), at);

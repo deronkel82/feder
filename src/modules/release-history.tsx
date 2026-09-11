@@ -17,7 +17,7 @@ export function ReleaseHistory() {
           key={release.version}
           open={index === 0}
         >
-          <summary>
+          <summary aria-label={release.version + ' · ' + release.title}>
             <span className="release-heading">
               <strong>
                 {release.version} · {release.title}
