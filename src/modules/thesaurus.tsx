@@ -137,6 +137,10 @@ export function Thesaurus({
       <small className="muted block">
         Wortdaten: LGPL 2.1+ · Stand 04.09.2026
         <br />
+        <a href="./licenses.html" target="_blank" rel="noreferrer">
+          Lizenz & Quelle
+        </a>
+        <br />
         Lokal und offline. Keine Grammatikprüfung.
       </small>
     </section>

@@ -5,8 +5,7 @@ const files = readdirSync(dir, { recursive: true })
   .filter(
     (f) =>
       !f.endsWith('sw.js') &&
-      !f.includes('LICENSE') &&
-      /\.(html|js|css|json|png|svg|webmanifest)$/.test(f),
+      /\.(html|js|css|json|png|svg|webmanifest|txt)$/.test(f),
   )
   .map((f) => './' + f);
 const hash = createHash('sha256');

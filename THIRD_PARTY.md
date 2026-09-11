@@ -13,5 +13,16 @@ The original license is included in `public/OPENTHESAURUS-LICENSE.txt`.
 Users can replace the JSON data file independently. Source credit is visible beside all synonym results.
 No API calls are made to OpenThesaurus by the app. Thus no manuscript or search term leaves the device.
 
-React and the other npm packages retain their own licenses, available in their package directories.
+## Bundled software
+
+Every production build generates `docs/licenses.html`, `docs/THIRD-PARTY-LICENSES.txt`
+and `docs/license-manifest.json` from the packages represented in the JavaScript bundles
+(including transitive dependencies), plus the Tailwind, tw-animate-css and shadcn UI/CSS foundations.
+Full package LICENSE/COPYING/NOTICE texts, including Lucide's Feather attribution,
+are retained rather than replaced by SPDX labels. A missing license file fails the build.
+The generated notices ship with GitHub Pages and are precached for offline use.
+Settings → App & Daten → Lizenzen & Quellen links to the readable page.
+
+The npm dependencies and build tools retain their own licenses in their installed package directories;
+the generated manifest describes the distributed browser build, not every development tool.
 Lucide icons are ISC licensed. The app icons consist of the letter f and a geometric dot.

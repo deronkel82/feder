@@ -202,6 +202,16 @@ export function SettingsDialog({
                 gesichert.
               </p>
             </section>
+            <section className="settings-info">
+              <h3>Lizenzen & Quellen</h3>
+              <p>
+                Feder verwendet freie Software und OpenThesaurus-Wortdaten mit
+                eigenen Lizenzbedingungen.
+              </p>
+              <a href="./licenses.html" target="_blank" rel="noreferrer">
+                Lizenztexte und Urheberhinweise öffnen
+              </a>
+            </section>
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -39,6 +39,11 @@ Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öf
 
 **Speicher ist geräte- und browsergebunden.** Eine optionale Synchronisierung über dein eigenes Google Drive lässt sich unter Einstellungen → Sync einschalten. Ohne Verbindung bleibt alles lokal. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
 
+## Neu in 0.9.1
+
+- Vollständige Lizenz- und Urheberhinweise unter Einstellungen → App & Daten → Lizenzen & Quellen. Auch direkt beim Thesaurus verlinkt und nach vollständigem Laden offline verfügbar.
+- Automatisch aus den eingebundenen Paketen erzeugte Drittanbietertexte und Versionsliste bei jedem Build; neue Pakete ohne Lizenzdatei halten die Veröffentlichung an.
+
 ## Neu in 0.9.0
 
 - **Google Drive:** Eigenes Konto auf jedem Gerät verbinden, dann „Jetzt synchronisieren“. Auf einem neuen Gerät kann die Drive-Bibliothek übernommen oder mit lokalen Projekten zusammengeführt werden. Automatik prüft bei geöffneter App etwa jede Minute nach einer Eingabepause. Google-Anmeldungen sind zeitlich begrenzt und müssen gelegentlich erneuert werden; kein Hintergrund-Sync bei geschlossener PWA.
