@@ -37,7 +37,15 @@ Der statische Build liegt in `dist-pages/`. Vite nutzt relative Pfade, sodass au
 
 Die App in Safari öffnen. Teilen → Zum Home-Bildschirm → „Als Web-App öffnen“ aktivieren (sofern angeboten) → Hinzufügen. Das erste Laden muss online erfolgen. Der Service Worker speichert auch die komplette Wortdatenbank lokal. Neue Versionen werden im Hintergrund gesucht und geladen. „Jetzt aktualisieren“ speichert die Arbeit und eine lokale Update-Sicherung vor dem Neustart. Sind weitere Feder-Fenster geöffnet, wird die Aktivierung abgelehnt. Alternativ werden fertig geladene Updates nach Schließen aller Feder-Fenster beim nächsten Start aktiv.
 
-**Speicher ist geräte- und browsergebunden.** Es gibt keine automatische Synchronisierung. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
+**Speicher ist geräte- und browsergebunden.** Eine optionale Synchronisierung über dein eigenes Google Drive lässt sich unter Einstellungen → Sync einschalten. Ohne Verbindung bleibt alles lokal. JSON-Sicherungen regelmäßig herunterladen und über Dateien/iCloud/AirDrop auf andere Geräte übertragen und dort importieren. Browserdaten zu löschen oder Speicherbereinigung durch das Betriebssystem kann lokale Projekte entfernen. „Lokal gespeichert“ bedeutet keine externe Sicherung. Ein Import legt zusätzliche Projekte an und übernimmt alle enthaltenen Versionen. Versionsstände werden nicht automatisch gelöscht.
+
+## Neu in 0.9.0
+
+- **Google Drive:** Eigenes Konto auf jedem Gerät verbinden, dann „Jetzt synchronisieren“. Auf einem neuen Gerät kann die Drive-Bibliothek übernommen oder mit lokalen Projekten zusammengeführt werden. Automatik prüft bei geöffneter App etwa jede Minute nach einer Eingabepause. Google-Anmeldungen sind zeitlich begrenzt und müssen gelegentlich erneuert werden; kein Hintergrund-Sync bei geschlossener PWA.
+- **Datenerhalt:** Dreiseitiger Vergleich mit dem letzten erfolgreichen Abgleich. Gleichzeitige Änderungen desselben Projekts oder derselben Romanwelt erzeugen Konfliktkopien. Vor lokalen Übernahmen wird eine Sicherung erstellt; Abgleichstand und lokale Bibliothek werden atomar gespeichert. Unveränderliche Drive-Stände verhindern gegenseitiges Überschreiben bei parallelen Uploads. Abgelöste Stände werden nach Erfolg entfernt; Fehler werden angezeigt und die Bereinigung erneut versucht.
+- **Umfang:** Ganze Bibliothek einschließlich Cover, Versionen, Kommentare, Papierkorb, Vorlagen, Romanwelten und Standard-Autor. Erscheinungsbild und Bedienung bleiben gerätespezifisch. Maximal 100 MB pro Syncstand. Bei Konflikten auf verschiedenen Geräten kann manuell geprüftes Zusammenführen nötig sein; kein gemeinsames Live-Schreiben.
+- **Google-App einrichten (nur Betreiber):** Google Drive API aktivieren, OAuth-Zielgruppe „Extern“, Web-Client mit autorisiertem JavaScript-Ursprung `https://deronkel82.github.io` erstellen. Nur `https://www.googleapis.com/auth/drive.appdata` verwenden. Die öffentliche Client-ID in `src/sync/config.ts` eintragen. Niemals ein Client-Secret in diese statische App aufnehmen. Für eigene Deployments einen eigenen Client und passenden Ursprung verwenden. Zum Freischalten anderer Konten muss die Google-App veröffentlicht sein; im Testmodus sind nur eingetragene Testnutzer zugelassen. Nutzer von Feder brauchen kein eigenes Cloud-Projekt.
+- **Datenschutz:** [Hinweise zur Drive-Synchronisierung](https://deronkel82.github.io/feder/privacy.html). Zugangstokens nur im Arbeitsspeicher. Datenübertragung direkt zu Google, keine zusätzliche Ende-zu-Ende-Verschlüsselung.
 
 ## Neu in 0.8.0
 
@@ -128,7 +136,7 @@ Siehe [Architektur](docs/ARCHITEKTUR.md) und [Funktionsrecherche](docs/RECHERCHE
 
 ## Grenzen dieser ersten Version
 
-Keine vollständige Papyrus-Funktionsparität: keine Duden-Grammatikprüfung, kein DOCX-Roundtrip, keine Änderungsverfolgung, keine Cloud-Synchronisierung, keine freie Mindmap und kein professioneller Buchsatz. Die Schreibfläche editiert einfachen Text und Markdown; fett/kursiv wird beim EPUB-/Druckexport umgesetzt. Stilanalyse ist eine Heuristik, keine Qualitätsbewertung. OpenThesaurus bietet Synonyme, keine Grammatikprüfung. Physische iOS-/iPadOS-Geräte wurden in dieser Sitzung nicht getestet.
+Keine vollständige Papyrus-Funktionsparität: keine Duden-Grammatikprüfung, kein DOCX-Roundtrip, keine Änderungsverfolgung, keine freie Mindmap und kein professioneller Buchsatz. Die Schreibfläche editiert einfachen Text und Markdown; fett/kursiv wird beim EPUB-/Druckexport umgesetzt. Stilanalyse ist eine Heuristik, keine Qualitätsbewertung. OpenThesaurus bietet Synonyme, keine Grammatikprüfung. Physische iOS-/iPadOS-Geräte wurden in dieser Sitzung nicht getestet.
 
 ## Lizenz
 

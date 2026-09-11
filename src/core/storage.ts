@@ -68,8 +68,12 @@ export async function load(): Promise<{
     };
   }
 }
-export function save(library: Library) {
+export function save(
+  library: Library,
+  sync?: { key: string; checkpoint: unknown; previous?: Library },
+) {
   const copy = structuredClone(library);
+  sync = sync ? structuredClone(sync) : undefined;
   const job = queue.then(async () => {
     const db = await database();
     await new Promise<void>((resolve, reject) => {
@@ -84,6 +88,18 @@ export function save(library: Library) {
           return;
         }
         store.put({ library: copy, revision: revision + 1 }, KEY);
+        if (sync) {
+          store.put(sync.checkpoint, sync.key);
+          if (sync.previous)
+            store.put(
+              {
+                date: new Date().toISOString(),
+                reason: 'Vor Synchronisierung',
+                library: sync.previous,
+              },
+              'backup:sync',
+            );
+        }
         if (copy.purgedProjectIds?.length) {
           const purged = new Set(copy.purgedProjectIds);
           const cursor = store.openCursor();
@@ -112,6 +128,33 @@ export function save(library: Library) {
                   c.update(backup);
                 }
               }
+            }
+            if (
+              typeof c.key === 'string' &&
+              c.key.startsWith('sync:') &&
+              c.value?.base
+            ) {
+              const record = c.value;
+              record.base.projects = record.base.projects.filter(
+                (p: Project) => !purged.has(p.id),
+              );
+              record.base.snapshots = record.base.snapshots.filter(
+                (s: { project: Project }) => !purged.has(s.project.id),
+              );
+              record.base.purgedProjectIds = [
+                ...new Set([
+                  ...(record.base.purgedProjectIds || []),
+                  ...purged,
+                ]),
+              ];
+              if (!record.base.projects.length) record.base = null;
+              else if (
+                !record.base.projects.some(
+                  (p: Project) => p.id === record.base.active,
+                )
+              )
+                record.base.active = record.base.projects[0].id;
+              c.update(record);
             }
             c.continue();
           };
@@ -218,4 +261,13 @@ export function download(
 }
 export function safeName(s: string) {
   return s.replace(/[^\p{L}\p{N}_-]/gu, '_').slice(0, 80) || 'Manuskript';
+}
+
+export async function readSyncCheckpoint(key: string): Promise<unknown> {
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const r = db.transaction('workspace').objectStore('workspace').get(key);
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
 }

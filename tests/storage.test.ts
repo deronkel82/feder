@@ -6,6 +6,43 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 });
 import { load, save, rawBackup } from '../src/core/storage.ts';
+void test('sync checkpoint, local replacement and recovery backup commit together', async () => {
+  const { readSyncCheckpoint, recoveryBackups } =
+    await import('../src/core/storage.ts');
+  const before = (await load()).library;
+  const after = structuredClone(before);
+  after.projects[0].title = 'Vom zweiten Gerät';
+  await save(after, {
+    key: 'sync:test',
+    checkpoint: { base: after, date: 'now' },
+    previous: before,
+  });
+  assert.deepEqual(
+    ((await readSyncCheckpoint('sync:test')) as { base: unknown }).base,
+    after,
+  );
+  assert.deepEqual(
+    (await recoveryBackups()).find((b) => b.key === 'backup:sync')?.library,
+    before,
+  );
+  const peerPath = '../src/core/storage.ts?sync-peer';
+  const peer = await import(peerPath);
+  await peer.load();
+  await save(after);
+  await assert.rejects(
+    peer.save(before, {
+      key: 'sync:test',
+      checkpoint: { base: before },
+      previous: after,
+    }),
+    /anderes Fenster/,
+  );
+  assert.deepEqual(
+    ((await readSyncCheckpoint('sync:test')) as { base: unknown }).base,
+    after,
+  );
+  assert.deepEqual((await load()).library, after);
+});
 void test('IndexedDB roundtrip, snapshot persistence and competing windows', async () => {
   const first = await load();
   assert.equal(first.error, null);

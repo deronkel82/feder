@@ -536,15 +536,15 @@ export function ProjectDialog({
               setRecoveries(list);
               setMessage(
                 list.length
-                  ? 'Sicherungen vor Updates / Datenumstellungen:'
-                  : 'Noch keine Update-Sicherung vorhanden.',
+                  ? 'Sicherungen vor Updates, Datenumstellungen oder Synchronisierung:'
+                  : 'Noch keine automatische Sicherung vorhanden.',
               );
             } catch {
               setMessage('Sicherungen derzeit nicht lesbar.');
             }
           }}
         >
-          Update-Sicherungen anzeigen
+          Automatische Sicherungen anzeigen
         </button>
         {recoveries.map((r) => (
           <button

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feder – Datenschutz bei Google Drive</title>
+<style>body{font:18px/1.65 system-ui,sans-serif;max-width:760px;margin:auto;padding:32px 20px;color:#183c40;background:#f7f6f0}h1,h2{line-height:1.2}a{color:#145d66}li{margin-block:10px}@media(prefers-color-scheme:dark){body{background:#15272c;color:#e0eaeb}a{color:#9fcfd0}}</style>
+<a href="./">← Zurück zu Feder</a>
+<h1>Deine Daten in Feder</h1>
+<p>Stand: 11. September 2026. Feder ist eine quelloffene Schreib-App. Standardmäßig speichert sie deine Bibliothek lokal im Browser bzw. in der installierten Web-App.</p>
+<h2>Optionale Google-Drive-Synchronisierung</h2>
+<p>Erst wenn du dein Google-Konto verbindest und die Synchronisierung startest, überträgt Feder deine Bibliothek direkt an Google Drive. Dazu gehören Projekte, Texte, Cover, Versionen, Kommentare, Figuren, Orte, Ideen, Vorlagen, der Standard-Autor und der Papierkorb. Die Daten landen im privaten Anwendungsbereich deines eigenen Google-Kontos. Andere Feder-Nutzer und die Betreiber dieser Website erhalten dadurch keinen Zugriff auf deine Bibliothek.</p>
+<p>Feder fordert ausschließlich die Berechtigung <code>drive.appdata</code> an. Damit kann die App ihre eigenen Anwendungsdaten lesen, schreiben und entfernen. Deine übrigen Drive-Dateien sind damit nicht zugänglich. Der Anwendungsbereich erscheint nicht als gewöhnlicher Ordner in Google Drive.</p>
+<p>Feder liest außerdem die von Google für die Verbindung bereitgestellte Kontokennung und den Anzeigenamen bzw. die E-Mail-Adresse, um das verbundene Konto zu zeigen und den lokalen Abgleichstand dem richtigen Konto zuzuordnen. Zugangstokens bleiben nur im Arbeitsspeicher; sie werden nicht in die Bibliothek, Sicherungsdateien oder GitHub geschrieben.</p>
+<h2>Verwendung und Übertragung</h2>
+<p>Google-Daten werden ausschließlich für die von dir gewünschte Synchronisierung verwendet, nicht für Werbung, Profilbildung, Verkauf oder das Training von KI-Modellen. Feder verwendet keine eigenen Analyse- oder Werbedienste. Die Verwendung und Weitergabe von Informationen aus Google APIs erfolgt gemäß der <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, einschließlich der Anforderungen zur eingeschränkten Nutzung (Limited Use).</p>
+<p>Die Übertragung erfolgt über HTTPS. Feder verschlüsselt die Bibliothek nicht zusätzlich Ende-zu-Ende. Für die Verarbeitung bei Google gelten dessen <a href="https://policies.google.com/privacy">Datenschutzhinweise</a>. Beim Laden der Google-Anmeldung werden technische Verbindungsdaten wie die IP-Adresse an Google übermittelt. Die Website wird über GitHub Pages bereitgestellt; dabei verarbeitet GitHub technische Zugriffsdaten gemäß seiner <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">Datenschutzerklärung</a>.</p>
+<h2>Trennen und Löschen</h2>
+<ul>
+<li>„Verbindung trennen“ beendet die Verbindung auf dem aktuellen Gerät. Lokale Daten und die Drive-Bibliothek bleiben erhalten.</li>
+<li>Du kannst Feder den Zugriff jederzeit in den Verbindungen deines Google-Kontos entziehen. Die gespeicherten App-Daten kannst du zusätzlich in Google Drive unter Einstellungen → Apps verwalten → Feder → Optionen → ausgeblendete App-Daten löschen entfernen.</li>
+<li>Endgültig gelöschte Projekte werden beim nächsten erfolgreichen Abgleich auch aus dem aktiven Drive-Stand entfernt. Ersetzte Syncstände werden anschließend bereinigt. Falls das fehlschlägt, zeigt Feder einen Hinweis und versucht es beim nächsten Abgleich erneut. Noch nicht synchronisierte Geräte und selbst exportierte Dateien behalten ihren bisherigen Stand.</li>
+<li>Vorlagen und gemeinsame Romanwelten sind eigenständige Daten. Das Löschen eines Projekts entfernt sie nicht automatisch. Eine lokale Sicherung vor dem Übernehmen geänderter Daten bleibt unter „Projekte &amp; Export“ verfügbar.</li>
+</ul>
+<h2>Fragen und Quellcode</h2>
+<p>Technische Fragen kannst du im <a href="https://github.com/deronkel82/feder/issues">Feder-Projekt auf GitHub</a> stellen. Bitte veröffentliche dort keine Manuskripte, Kontodaten oder Zugangstokens. Der <a href="https://github.com/deronkel82/feder">Quellcode</a> ist öffentlich einsehbar.</p>
+</html>

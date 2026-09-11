@@ -1,6 +1,6 @@
 /* Build replaces the following two placeholders. App data lives only in IndexedDB. */
-const VERSION = "feder-26e4bb1f3890";
-const ASSETS = ["./favicon.svg","./icon-192.png","./icon-512.png","./index.html","./manifest.webmanifest","./thesaurus.json","./assets/entities.worker-D-RZ1g9h.js","./assets/index-FBDsiP8d.js","./assets/index-UOg6PlAy.css","./assets/publishing-BAB2W_e1.js","./assets/thesaurus.worker-DOSuw8dC.js"];
+const VERSION = "feder-404011b680ee";
+const ASSETS = ["./favicon.svg","./icon-192.png","./icon-512.png","./index.html","./manifest.webmanifest","./privacy.html","./thesaurus.json","./assets/entities.worker-D-RZ1g9h.js","./assets/index-BUP26yKM.css","./assets/index-TI3ck0ds.js","./assets/publishing-BuSmcWUj.js","./assets/thesaurus.worker-DOSuw8dC.js"];
 const PREFIX = 'feder:' + self.registration.scope + ':';
 const CACHE = PREFIX + VERSION;
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));

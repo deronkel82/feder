@@ -1,3 +1,4 @@
+import { useDriveSync } from './sync/use-drive-sync';
 import { SearchReplace, CommentsDialog } from './modules/text-review';
 import { SharedWorldPanel } from './modules/library-extras';
 import {
@@ -19,6 +20,7 @@ import {
   Plus,
   Search,
   Settings2,
+  RefreshCw,
   Focus,
   PanelRight,
   Check,
@@ -122,6 +124,7 @@ export default function App() {
 function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [library, setLibrary] = useState(initial.library);
   const [saveError, setSaveError] = useState(initial.error);
+  const driveSync = useDriveSync(library, setLibrary, saveError);
   const [savedLibrary, setSavedLibrary] = useState<LibraryData | null>(null);
   const saved = savedLibrary === library;
   const [sideOpen, setSideOpen] = useState(true);
@@ -133,6 +136,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [focus, setFocus] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [settingsSection, setSettingsSection] = useState('appearance');
   const [versionDialog, setVersionDialog] = useState(false);
   const [searchDialog, setSearchDialog] = useState(false);
   const [commentsDialog, setCommentsDialog] = useState(false);
@@ -443,9 +447,27 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               <button
                 title="Module & Einstellungen"
                 aria-label="Module & Einstellungen"
-                onClick={() => setSettings(true)}
+                onClick={() => {
+                  setSettingsSection('appearance');
+                  setSettings(true);
+                }}
               >
                 <Settings2 size={18} />
+              </button>
+              <button
+                className={driveSync.attention ? 'sync-attention' : ''}
+                title={driveSync.message || 'Google Drive synchronisieren'}
+                aria-label={
+                  'Google Drive: ' +
+                  (driveSync.message || 'Synchronisierung öffnen')
+                }
+                onClick={() => {
+                  setSettingsSection('sync');
+                  setSettings(true);
+                }}
+              >
+                <RefreshCw size={18} />
+                {driveSync.attention && <span aria-hidden="true">!</span>}
               </button>
               <UpdateNotice updates={updates} />
               <button
@@ -977,8 +999,19 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         jump={(start, end) => jumpTo(s.id, start, end)}
         disabled={!!saveError}
       />
+      <Dialog open={driveSync.busy}>
+        <DialogContent showCloseButton={false}>
+          <DialogTitle>Synchronisierung läuft</DialogTitle>
+          <DialogDescription>
+            Deine Bibliothek wird sicher abgeglichen. Bitte Feder geöffnet
+            lassen.
+          </DialogDescription>
+          <p aria-live="polite">{driveSync.message}</p>
+        </DialogContent>
+      </Dialog>
       <SettingsDialog
         open={settings}
+        initialSection={settingsSection}
         setOpen={setSettings}
         library={library}
         setLibrary={setLibrary}
@@ -989,6 +1022,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         scheme={scheme}
         setScheme={setScheme}
         error={!!saveError}
+        sync={driveSync}
         accessibility={accessibility}
         setAccessibility={setAccessibility}
         onModuleDisabled={(id) => {

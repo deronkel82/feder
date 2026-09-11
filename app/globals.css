@@ -2894,3 +2894,32 @@ select:focus-visible {
     flex-wrap: wrap;
   }
 }
+
+.atelier-settings .settings-tabs {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.sync-panel {
+  display: grid;
+  gap: 16px;
+}
+.sync-panel output {
+  display: block;
+  padding: 12px;
+  background: var(--accent);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .atelier-settings .settings-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sync-attention {
+  color: var(--primary);
+  position: relative;
+}
+.sync-attention > span {
+  font-weight: 800;
+  margin-left: 2px;
+}

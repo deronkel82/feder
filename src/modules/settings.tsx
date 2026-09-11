@@ -1,3 +1,5 @@
+import { SyncPanel } from '../sync/panel';
+import type { DriveSync } from '../sync/use-drive-sync';
 import { AccessibilityFields } from './accessibility';
 import type { Accessibility } from '../core/accessibility';
 import {
@@ -14,6 +16,8 @@ import { isOther } from '../core/project-format';
 import { modules } from './registry';
 import type { Project, Library } from '../core/model';
 export function SettingsDialog({
+  initialSection,
+  sync,
   open,
   setOpen,
   library,
@@ -29,6 +33,8 @@ export function SettingsDialog({
   accessibility,
   setAccessibility,
 }: {
+  initialSection: string;
+  sync: DriveSync;
   accessibility: Accessibility;
   setAccessibility: (v: Accessibility) => void;
   open: boolean;
@@ -52,11 +58,12 @@ export function SettingsDialog({
           Gestalte deinen Schreibplatz. Darstellung und Autor gelten
           projektübergreifend, Module für das geöffnete Projekt.
         </DialogDescription>
-        <Tabs defaultValue="appearance">
+        <Tabs key={initialSection + String(open)} defaultValue={initialSection}>
           <TabsList className="settings-tabs" aria-label="Einstellungsbereiche">
             <TabsTrigger value="appearance">Darstellung</TabsTrigger>
             <TabsTrigger value="author">Autor</TabsTrigger>
             <TabsTrigger value="modules">Module</TabsTrigger>
+            <TabsTrigger value="sync">Sync</TabsTrigger>
             <TabsTrigger value="app">App & Daten</TabsTrigger>
           </TabsList>
           <TabsContent value="appearance" className="settings-panel">
@@ -165,6 +172,9 @@ export function SettingsDialog({
                 ))
             )}
           </TabsContent>
+          <TabsContent value="sync" className="settings-panel">
+            <SyncPanel sync={sync} />
+          </TabsContent>
           <TabsContent value="app" className="settings-panel">
             <h2>App & Daten</h2>
             <section className="settings-info">
@@ -178,7 +188,8 @@ export function SettingsDialog({
             <section className="settings-info">
               <h3>Lokal gespeichert</h3>
               <p>
-                Projekte bleiben auf diesem Gerät. Lade unter „Projekte &
+                Projekte werden lokal gespeichert. Optional gleicht Google Drive
+                sie mit deinen anderen Geräten ab. Lade unter „Projekte &
                 Export“ regelmäßig eine komplette JSON-Sicherung herunter. Dort
                 kannst du sie auch auf einem anderen Gerät importieren.
               </p>
