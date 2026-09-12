@@ -1,3 +1,4 @@
+import { validCharacter, type CharacterProfile } from './characters.ts';
 import {
   validPosition,
   validExport,
@@ -22,6 +23,7 @@ export type Scene = {
   notes: string;
 };
 export type Card = {
+  character?: CharacterProfile;
   aliases?: string[];
   manuscriptSceneId?: string;
   id: string;
@@ -33,6 +35,7 @@ export type Card = {
 };
 export type Series = { enabled: boolean; title: string; volume: string };
 export type Project = {
+  exportOptions?: import('./workbench.ts').ExportOptions;
   readingPosition?: ReadingPosition;
   reviewPasses?: ReviewPass[];
   exportPresets?: ExportPreset[];
@@ -234,6 +237,8 @@ export function validateLibrary(data: unknown): Library {
           p.charTarget > 100000000))
     )
       throw Error('Ungültige Projektart oder Zeichenbegrenzung.');
+    if (p.exportOptions !== undefined && !validExport(p.exportOptions))
+      throw Error('Ungültige Exporteinstellungen.');
     if (p.readingPosition !== undefined && !validPosition(p.readingPosition))
       throw Error('Ungültige Leseposition.');
     if (p.syncResolved !== undefined && typeof p.syncResolved !== 'boolean')
@@ -342,6 +347,8 @@ export function validateLibrary(data: unknown): Library {
         'Ohne Szenenmethodik darf jedes Kapitel nur einen Text enthalten.',
       );
     for (const c of p.cards) {
+      if (c?.character !== undefined && !validCharacter(c.character))
+        throw Error('Ungültiges Figurenprofil.');
       if (
         c.aliases !== undefined &&
         (!Array.isArray(c.aliases) || !c.aliases.every(str))

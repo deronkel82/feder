@@ -1,3 +1,5 @@
+import { CharacterFields } from './character-fields';
+import { characterSearch } from '../core/characters';
 import { isStandalone, usesScenes } from '../core/project-format';
 import { chapterLabel } from '../core/chapters';
 import { useState } from 'react';
@@ -44,7 +46,9 @@ export function CardsView({
   const cards = project.cards.filter(
     (c) =>
       c.kind === actual &&
-      (c.title + ' ' + c.text).toLowerCase().includes(query.toLowerCase()),
+      (c.title + ' ' + c.text + ' ' + characterSearch(c.character))
+        .toLowerCase()
+        .includes(query.toLowerCase()),
   );
   const board = kind === 'Idee';
   const Icon =
@@ -85,6 +89,9 @@ export function CardsView({
       </div>
       <h2>{c.title}</h2>
       <small>{c.subtitle || c.kind}</small>
+      {c.character?.roles.length ? (
+        <small>{c.character.roles.join(' · ')}</small>
+      ) : null}
       <p>{c.text || 'Hier ist noch Platz für deine Gedanken.'}</p>
       <div className="card-bottom">
         {c.kind}
@@ -214,7 +221,7 @@ export function CardsView({
               }}
             >
               <label className="field-label">
-                NAME ODER TITEL
+                {editing.kind === 'Figur' ? 'ANZEIGENAME' : 'NAME ODER TITEL'}
                 <input
                   required
                   value={editing.title}
@@ -234,6 +241,12 @@ export function CardsView({
                   }
                 />
               </label>
+              {editing.kind === 'Figur' && (
+                <CharacterFields
+                  value={editing.character}
+                  change={(character) => setEditing({ ...editing, character })}
+                />
+              )}
               <label className="field-label">
                 NOTIZEN
                 <textarea

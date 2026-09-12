@@ -1,4 +1,6 @@
 import { exportDefaults, type ExportOptions } from '../core/workbench.ts';
+import { bookDesignDefaults } from '../core/book-design.ts';
+import { validCover } from '../core/cover-data.ts';
 import { isStandalone, usesScenes } from '../core/project-format.ts';
 import {
   chapterLabel,
@@ -16,17 +18,38 @@ export const escape = (s: string) =>
         c
       ]!,
   );
-export const paragraphs = (s: string) =>
-  s
-    .split(/\n\s*\n/)
-    .map(
-      (p) =>
-        `<p>${escape(p)
-          .replace(/\n/g, '<br/>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*([^*]+)\*/g, '<em>$1</em>')}</p>`,
-    )
-    .join('\n');
+const inline = (s: string) =>
+  escape(s)
+    .replace(/\n/g, '<br/>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+// Deliberately limited Markdown: user HTML is always escaped.
+export function paragraphs(s: string): string {
+  const lines = s.split('\n');
+  const blocks: string[] = [];
+  let buffer: string[] = [];
+  let centered = false;
+  const flush = () => {
+    if (buffer.length) {
+      blocks.push(
+        `<p${centered ? ' class="centered"' : ''}>${inline(buffer.join('\n'))}</p>`,
+      );
+      buffer = [];
+    }
+  };
+  for (const line of lines) {
+    if (line.trim() === ':::center' && !centered) {
+      flush();
+      centered = true;
+    } else if (line.trim() === ':::' && centered) {
+      flush();
+      centered = false;
+    } else if (!line.trim()) flush();
+    else buffer.push(line);
+  }
+  flush();
+  return blocks.join('\n');
+}
 export function exportHeading(p: Project, s: Scene) {
   if (isStandalone(p)) return p.title;
   return [
@@ -37,46 +60,175 @@ export function exportHeading(p: Project, s: Scene) {
     .filter(Boolean)
     .join(' · ');
 }
-export async function exportEpub(
+function outputChapter(p: Project, s: Scene, o: ExportOptions) {
+  if (isStandalone(p)) return p.title;
+  const c = chapterDetails(p, s.chapter);
+  const hidden =
+    (c.kind === 'prologue' && o.hidePrologue) ||
+    (c.kind === 'epilogue' && o.hideEpilogue);
+  const label = hidden
+    ? /^(Prolog|Epilog)$/iu.test(c.name)
+      ? ''
+      : c.name
+    : chapterLabel(p, c.name);
+  return [o.partInChapter ? c.part : '', label].filter(Boolean).join(' · ');
+}
+function coverFor(p: Project, o: ExportOptions) {
+  const cover =
+    o.coverMode === 'project'
+      ? p.cover
+      : o.coverMode === 'alternative'
+        ? o.alternativeCover
+        : undefined;
+  return validCover(cover) ? cover : undefined;
+}
+type BookSection = { file: string; title: string; body: string };
+function sections(
   p: Project,
-  options: ExportOptions = exportDefaults,
+  options: ExportOptions,
+  epubCover?: string,
+): BookSection[] {
+  const o = { ...bookDesignDefaults, ...options };
+  const out: BookSection[] = [];
+  const add = (file: string, title: string, body: string) =>
+    out.push({ file, title, body });
+  const cover = coverFor(p, o);
+  if (cover)
+    add(
+      'cover',
+      'Cover',
+      `<section class="front cover-image"><img src="${escape(epubCover || cover)}" alt="${escape(p.title)}"/></section>`,
+    );
+  if (o.titlePage)
+    add(
+      'title',
+      'Schmutztitel',
+      `<section class="front title-page">${o.halfTitleTitle ? `<h1>${escape(p.title)}</h1>` : ''}${o.halfTitleAuthor && !o.anonymous ? `<p>${escape(p.author)}</p>` : ''}${p.series.enabled && o.halfTitleSeries ? `<p>${escape(p.series.title)}</p>` : ''}${p.series.enabled && o.halfTitleVolume ? `<p>Band ${escape(p.series.volume)}</p>` : ''}</section>`,
+    );
+  if (o.imprintEnabled && o.imprint.trim())
+    add(
+      'imprint',
+      'Impressum',
+      `<section class="front imprint"><div>${paragraphs(o.imprint)}</div></section>`,
+    );
+  if (o.dedicationEnabled && o.dedication.trim())
+    add(
+      'dedication',
+      'Widmung',
+      `<section class="front title-page dedication">${paragraphs(o.dedication)}</section>`,
+    );
+  let chapter = '';
+  let part = '';
+  orderedScenes(p).forEach((s, i) => {
+    const changed = s.chapter !== chapter;
+    chapter = s.chapter;
+    const c = chapterDetails(p, s.chapter);
+    const newPart = changed && c.part && c.part !== part;
+    if (changed) part = c.part;
+    const label = outputChapter(p, s, o);
+    const sceneTitle =
+      o.sceneHeadings &&
+      usesScenes(p) &&
+      !(
+        ((o.hidePrologue && c.kind === 'prologue') ||
+          (o.hideEpilogue && c.kind === 'epilogue')) &&
+        /^(Prolog|Epilog)$/iu.test(s.title)
+      )
+        ? s.title
+        : '';
+    add(
+      `scene-${i}`,
+      [label, sceneTitle].filter(Boolean).join(' · ') ||
+        (c.kind === 'epilogue' ? 'Ausklang' : 'Anfang'),
+      `${newPart && o.partPage ? `<section class="front title-page part-page"><h1>${escape(c.part)}</h1></section>` : ''}<section id="chapter-${i}" class="${changed ? 'chapter' : 'scene'}">${changed && label ? `<h1>${escape(label)}</h1>` : ''}${sceneTitle ? `<h2>${escape(sceneTitle)}</h2>` : ''}${paragraphs(s.text)}</section>`,
+    );
+  });
+  return out;
+}
+function toc(p: Project, o: ExportOptions, epub: boolean) {
+  let last = '';
+  return `<h1>Inhaltsverzeichnis</h1><ol>${orderedScenes(p)
+    .map((s, i) => {
+      if (s.chapter === last) return '';
+      last = s.chapter;
+      const label = outputChapter(p, s, o) || s.title || 'Anfang';
+      return `<li><a href="${epub ? `scene-${i}.xhtml` : ''}#chapter-${i}">${escape(/^(Prolog|Epilog)$/iu.test(label) && ((o.hidePrologue && chapterDetails(p, s.chapter).kind === 'prologue') || (o.hideEpilogue && chapterDetails(p, s.chapter).kind === 'epilogue')) ? 'Anfang' : label)}</a></li>`;
+    })
+    .join('')}</ol>`;
+}
+export function exportStyles(options: ExportOptions) {
+  const o = { ...bookDesignDefaults, ...options };
+  const font =
+    o.font === 'mono'
+      ? 'Courier New,monospace'
+      : o.font === 'sans'
+        ? 'Arial,sans-serif'
+        : 'Georgia,serif';
+  return `@page{size:A4;margin:25mm}body{font:${o.size}pt/${o.line} ${font};color:#111;background:white;margin:0}p{margin:0 0 ${o.gap}pt;orphans:3;widows:3}h1{font-size:1.6em}h2{font-size:1.2em}h1,h2{break-after:avoid}.centered{text-align:center}.chapter{${o.chapterBreak ? 'break-before:page;' : ''}}.front{box-sizing:border-box;min-height:240mm;break-after:page;break-inside:avoid}.title-page{display:flex;flex-direction:column;justify-content:center;text-align:center}.imprint{display:flex;align-items:flex-end}.imprint>div{width:100%;overflow-wrap:anywhere}.cover-image{display:flex;align-items:center;justify-content:center}.cover-image img{max-width:100%;max-height:240mm;object-fit:contain}.part-page{break-before:page}.contents li{margin:8pt 0}.running{font-size:9pt;white-space:pre-wrap;text-align:center;overflow-wrap:anywhere}header.running{margin-bottom:12pt}footer.running{margin-top:12pt}main>section:first-child{break-before:auto}@media screen{body{padding:24px}.front{min-height:75vh;margin-bottom:32px;border-bottom:1px solid #ddd}.cover-image img{max-height:75vh}.imprint{min-height:75vh}}@media print{header.running,footer.running{position:fixed;left:0;right:0;margin:0;max-height:15mm;overflow:hidden}header.running{top:-18mm}footer.running{bottom:-18mm}}`;
+}
+export function exportDocument(
+  p: Project,
+  options: ExportOptions = p.exportOptions || exportDefaults,
 ) {
-  if (options.anonymous) p = { ...p, author: '' };
-  p = { ...p, scenes: orderedScenes(p) };
+  const o = { ...bookDesignDefaults, ...options };
+  const parts = sections(p, o);
+  const firstScene = parts.findIndex((s) => s.file.startsWith('scene-'));
+  if (o.contents)
+    parts.splice(firstScene < 0 ? parts.length : firstScene, 0, {
+      file: 'contents',
+      title: 'Inhaltsverzeichnis',
+      body: `<section class="front contents">${toc(p, o, false)}</section>`,
+    });
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>${exportStyles(o)}</style></head><body>${o.header ? `<header class="running">${escape(o.header)}</header>` : ''}<main>${parts.map((s) => s.body).join('')}</main>${o.footer ? `<footer class="running">${escape(o.footer)}</footer>` : ''}</body></html>`;
+}
+export function epubBytes(
+  p: Project,
+  options: ExportOptions = p.exportOptions || exportDefaults,
+) {
+  const o = { ...bookDesignDefaults, ...options };
+  if (o.anonymous) p = { ...p, author: '' };
   const files: Record<string, Uint8Array | [Uint8Array, { level: 0 }]> = {
     mimetype: [strToU8('application/epub+zip'), { level: 0 }],
   };
   files['META-INF/container.xml'] = strToU8(
     '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
   );
+  const cover = coverFor(p, o);
+  let imageItem = '';
+  let coverPath: string | undefined;
+  if (cover) {
+    const match = /^data:(image\/(jpeg|png|webp));base64,(.*)$/.exec(cover)!;
+    coverPath = 'cover.' + (match[2] === 'jpeg' ? 'jpg' : match[2]);
+    files['EPUB/' + coverPath] = Uint8Array.from(atob(match[3]), (c) =>
+      c.charCodeAt(0),
+    );
+    imageItem = `<item id="cover-image" href="${coverPath}" media-type="${match[1]}" properties="cover-image"/>`;
+  }
   const xhtml = (title: string, body: string) =>
-    `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="de" xml:lang="de"><head><title>${escape(title)}</title><style>${exportStyles(options)}</style></head><body>${body}</body></html>`;
-  p.scenes.forEach(
-    (s, i) =>
-      (files[`EPUB/scene-${i}.xhtml`] = strToU8(
-        xhtml(
-          exportHeading(p, s),
-          `<h1>${escape(options.sceneHeadings ? exportHeading(p, s) : chapterLabel(p, s.chapter))}</h1>${paragraphs(s.text)}`,
-        ),
-      )),
-  );
+    `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="de" xml:lang="de"><head><title>${escape(title)}</title><style>${exportStyles(o)}</style></head><body>${body}</body></html>`;
+  const parts = sections(p, o, coverPath);
+  for (const s of parts)
+    files[`EPUB/${s.file}.xhtml`] = strToU8(xhtml(s.title, s.body));
   files['EPUB/nav.xhtml'] = strToU8(
     xhtml(
-      p.title,
-      `<nav epub:type="toc" id="toc"><h1>${escape(p.title)}</h1><ol>${p.scenes.map((s, i) => `<li><a href="scene-${i}.xhtml">${escape(exportHeading(p, s))}</a></li>`).join('')}</ol></nav>`,
+      'Inhaltsverzeichnis',
+      `<nav epub:type="toc" id="toc">${toc(p, o, true)}</nav>`,
     ),
   );
-  if (options.titlePage)
-    files['EPUB/title.xhtml'] = strToU8(
-      xhtml(
-        p.title,
-        `<h1>${escape(p.title)}</h1>${options.anonymous ? '' : `<p>${escape(p.author)}</p>`}`,
-      ),
-    );
+  const first = parts.findIndex((s) => s.file.startsWith('scene-'));
+  const spine = parts.map((s) => `<itemref idref="${s.file}"/>`);
+  if (o.contents)
+    spine.splice(first < 0 ? spine.length : first, 0, '<itemref idref="nav"/>');
   files['EPUB/package.opf'] = strToU8(
-    `<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:uuid:${escape(p.id)}</dc:identifier><dc:title>${escape(p.title)}</dc:title><dc:language>de</dc:language><dc:creator>${escape(p.author)}</dc:creator><meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}</meta></metadata><manifest>${options.titlePage ? '<item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>' : ''}<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>${p.scenes.map((_, i) => `<item id="s${i}" href="scene-${i}.xhtml" media-type="application/xhtml+xml"/>`).join('')}</manifest><spine>${options.titlePage ? '<itemref idref="title"/>' : ''}${p.scenes.map((_, i) => `<itemref idref="s${i}"/>`).join('')}</spine></package>`,
+    `<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:uuid:${escape(p.id)}</dc:identifier><dc:title>${escape(p.title)}</dc:title><dc:language>de</dc:language><dc:creator>${escape(p.author)}</dc:creator><meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}</meta></metadata><manifest>${imageItem}<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>${parts.map((s) => `<item id="${s.file}" href="${s.file}.xhtml" media-type="application/xhtml+xml"/>`).join('')}</manifest><spine>${spine.join('')}</spine></package>`,
   );
-  const bytes = zipSync(files, { level: 6 });
+  return zipSync(files, { level: 6 });
+}
+export async function exportEpub(
+  p: Project,
+  o: ExportOptions = p.exportOptions || exportDefaults,
+) {
+  const bytes = epubBytes(p, o);
   const a = document.createElement('a');
   const url = URL.createObjectURL(
     new Blob([bytes as BlobPart], { type: 'application/epub+zip' }),
@@ -86,28 +238,10 @@ export async function exportEpub(
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
-export function exportStyles(o: ExportOptions) {
-  const font =
-    o.font === 'mono'
-      ? 'Courier New,monospace'
-      : o.font === 'sans'
-        ? 'Arial,sans-serif'
-        : 'Georgia,serif';
-  return `@page{size:A4;margin:25mm}body{font:${o.size}pt/${o.line} ${font};color:#111;background:white;margin:0}p{margin:0 0 ${o.gap}pt;orphans:3;widows:3}h1{font-size:1.6em}h2{font-size:1.2em}.chapter{${o.chapterBreak ? 'break-before:page;' : ''}}.cover{padding-top:25%;text-align:center;break-after:page}body>section:first-child{break-before:auto}`;
-}
-export function exportDocument(p: Project, o: ExportOptions = exportDefaults) {
-  const scenes = orderedScenes(p);
-  let chapter = '';
-  const body = scenes
-    .map((s) => {
-      const changed = s.chapter !== chapter;
-      chapter = s.chapter;
-      return `<section class="${changed ? 'chapter' : 'scene'}">${changed ? `<h1>${escape(isStandalone(p) ? p.title : [chapterDetails(p, s.chapter).part, chapterLabel(p, s.chapter)].filter(Boolean).join(' · '))}</h1>` : ''}${o.sceneHeadings && usesScenes(p) ? `<h2>${escape(s.title)}</h2>` : ''}${paragraphs(s.text)}</section>`;
-    })
-    .join('');
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${escape(p.title)}</title><style>${exportStyles(o)}</style></head><body>${o.titlePage ? `<div class="cover"><h1>${escape(p.title)}</h1>${o.anonymous ? '' : `<p>${escape(p.author)}</p>`}</div>` : ''}${body}</body></html>`;
-}
-export function printBook(p: Project, o: ExportOptions = exportDefaults) {
+export function printBook(
+  p: Project,
+  o: ExportOptions = p.exportOptions || exportDefaults,
+) {
   const frame = document.createElement('iframe');
   frame.style.cssText = 'position:fixed;width:0;height:0;border:0';
   document.body.appendChild(frame);

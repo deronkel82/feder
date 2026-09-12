@@ -165,3 +165,23 @@ Feder merkt Szene, Cursor und Scrollposition lokal pro Projekt. Unter **Leseposi
 Unter **Projekte & Export → Exportvorschau** lassen sich Schrift, Größe, Abstände, Überschriften und Titelseite einstellen und als Exportvorlage im Projekt speichern. Vorschau und HTML/Druck verwenden dasselbe Dokument. Die endgültigen PDF-Seitenumbrüche entstehen im Druckdialog; „Normseiten-Stil“ garantiert keine exakt 30 × 60 Zeichen. EPUB-Lesegeräte können Layout und Umbrüche selbst bestimmen.
 
 Nach einem Update erscheint **Neu in Feder** einmalig mit den Änderungen seit der zuletzt bestätigten Version. Die vollständige Historie bleibt unter **Einstellungen → App & Daten → Updates** verfügbar. Neue Veröffentlichungen müssen in `src/core/releases.json` eingetragen werden; der Build prüft die Übereinstimmung mit der Paketversion.
+
+## Buchgestaltung und Szenenwand (0.11.0)
+
+**Projekte & Export → Exportvorschau & Vorlagen** enthält aufklappbare Bereiche für Buchanfang, Kapitel/Akte, Kopf-/Fußzeilen und Schrift/Seitenlayout. Einstellungen werden automatisch im jeweiligen Projekt gespeichert, gesichert und synchronisiert. Ein alternatives Exportcover verändert das Projektcover nicht. Coveruploads werden wie Projektcover lokal verkleinert.
+
+Die optionalen Anfangsseiten erscheinen in der Reihenfolge Cover, Schmutztitel, Impressum, Widmung, Inhaltsverzeichnis. Der Schmutztitel kann Titel, Autor, Reihenname und Band zeigen. Das Impressum wird im Druck unten auf einer eigenen Seite angeordnet; eine sehr lange Eingabe benötigt gegebenenfalls mehrere Seiten. Die Widmung wird mittig gesetzt. Kopf-/Fußzeilen sind kurze eigene Texte für den Druck; die Browser-Kopf-/Fußzeilen im Druckdialog ausschalten und das Druckergebnis prüfen. EPUB-Lesegeräte bestimmen ihre eigenen Kopf-/Fußzeilen. Das Inhaltsverzeichnis verlinkt Kapitel und enthält keine berechneten Druckseitenzahlen; die erforderliche EPUB-Navigation bleibt auch bei ausgeschaltetem sichtbaren Inhaltsverzeichnis vorhanden.
+
+**Zentrieren** im Manuskript umschließt die Auswahl mit Feder-Markdown:
+
+```text
+:::center
+Dieser Absatz wird zentriert.
+:::
+```
+
+Das wird in HTML, Druck/PDF und EPUB unterstützt. Andere Markdown-Programme müssen diese Erweiterung selbst unterstützen; beliebiges HTML wird weiterhin sicher als Text ausgegeben.
+
+**Figuren & Orte → Figur bearbeiten** bietet ein optionales Figurenprofil mit zwei kombinierbaren Rollen. Das Profil steht auch in der gemeinsamen Romanwelt bereit. Vollständiger Name und Spitzname unterstützen die lokale Erkennung, die Profile sind projektweit durchsuchbar.
+
+**Buchwerkzeuge → Szenenwand** zeigt Kapitelzeilen mit Szenenkarten und Einfügeflächen. Am Griff ziehen funktioniert mit Maus und Pointer-Touch; alternativ „Verschieben“ und das gewünschte „Hier einfügen“ auswählen. Text, Kommentare, Status und IDs bleiben erhalten. Vor jeder tatsächlichen Verschiebung wird eine Version gesichert. Die letzte Verschiebung kann unmittelbar zurückgenommen werden, solange das Projekt nicht anderweitig verändert wurde. Leere Kapitel bleiben in der Szenenwand als Einfügeziele erhalten. Die Ansicht setzt eingeschaltete Szenenmethodik voraus.

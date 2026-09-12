@@ -46,7 +46,6 @@ export function SyncStatus({
       aria-label={'Google Drive: ' + labels[status]}
     >
       <Icon size={18} />
-      <span>{labels[status]}</span>
     </button>
   );
 }

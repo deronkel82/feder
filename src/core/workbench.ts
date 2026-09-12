@@ -1,3 +1,5 @@
+import { validBookDesign, type BookDesign } from './book-design.ts';
+import { characterSearch } from './characters.ts';
 import { type Library, type Project, type Scene, type Card } from './model.ts';
 import { withSnapshot } from './history.ts';
 import { textDiff, reanchorComments } from './text-tools.ts';
@@ -15,7 +17,7 @@ export type ReviewPass = {
   checks: { id: string; text: string }[];
   completed: string[];
 };
-export type ExportOptions = {
+export type ExportOptions = BookDesign & {
   font: 'serif' | 'sans' | 'mono';
   size: number;
   line: number;
@@ -39,6 +41,7 @@ export const exportDefaults: ExportOptions = {
 export function validExport(o: ExportOptions) {
   return (
     o &&
+    validBookDesign(o) &&
     ['serif', 'sans', 'mono'].includes(o.font) &&
     Number.isFinite(o.size) &&
     o.size >= 8 &&
@@ -148,7 +151,13 @@ export function searchProject(
           Recherche: 'Recherche',
         }[c.kind],
         c.title,
-        [c.title, c.subtitle, c.text, ...(c.aliases || [])].join('\n'),
+        [
+          c.title,
+          c.subtitle,
+          c.text,
+          characterSearch(c.character),
+          ...(c.aliases || []),
+        ].join('\n'),
         'card',
         { cardId: c.id, worldId },
       );

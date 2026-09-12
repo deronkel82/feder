@@ -311,6 +311,18 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
       editor.current?.setSelectionRange(start, end);
     });
   }
+  function centerText() {
+    const e = editor.current;
+    if (!e) return;
+    const a = e.selectionStart,
+      b = e.selectionEnd;
+    const block = '\n\n:::center\n' + s.text.slice(a, b) + '\n:::\n\n';
+    patch({ text: s.text.slice(0, a) + block + s.text.slice(b) });
+    requestAnimationFrame(() => {
+      e.focus();
+      e.setSelectionRange(a + 12, b + 12);
+    });
+  }
   function format(mark: string) {
     const e = editor.current;
     if (!e) return;
@@ -604,6 +616,12 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       onClick={() => format('*')}
                     >
                       <i>I</i>
+                    </button>
+                    <button
+                      title="Markierten Text für die Ausgabe zentrieren (:::center)"
+                      onClick={centerText}
+                    >
+                      Zentrieren
                     </button>
                     <span className="toolbar-divider" />
                     <span className="font-label">Literarisch</span>

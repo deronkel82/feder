@@ -1,3 +1,4 @@
+import { CharacterFields } from './character-fields';
 import { useState } from 'react';
 import {
   Dialog,
@@ -420,7 +421,7 @@ export function SharedWorldPanel({
                 </select>
               </label>
               <label className="field-label">
-                NAME
+                {editing.kind === 'Figur' ? 'ANZEIGENAME' : 'NAME'}
                 <input
                   required
                   value={editing.title}
@@ -438,6 +439,12 @@ export function SharedWorldPanel({
                   }
                 />
               </label>
+              {editing.kind === 'Figur' && (
+                <CharacterFields
+                  value={editing.character}
+                  change={(character) => setEditing({ ...editing, character })}
+                />
+              )}
               <label className="field-label">
                 DETAILS
                 <textarea

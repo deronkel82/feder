@@ -1,3 +1,4 @@
+import { SceneBoard } from './scene-board';
 import { useState, useMemo, useDeferredValue } from 'react';
 import {
   Dialog,
@@ -51,6 +52,7 @@ export function BookTools({
             {[
               ['search', 'Überall suchen'],
               ['overview', 'Überblick'],
+              ['board', 'Szenenwand'],
               ['review', 'Prüflisten'],
               ['names', 'Namen'],
               ['compare', 'Vergleichen'],
@@ -65,6 +67,9 @@ export function BookTools({
           </TabsContent>
           <TabsContent value="overview">
             <ChapterOverview {...props} close={() => setOpen(false)} />
+          </TabsContent>
+          <TabsContent value="board">
+            <SceneBoard {...props} />
           </TabsContent>
           <TabsContent value="review">
             <ReviewPasses {...props} />

@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.11.0",
+    "date": "2026-09-12",
+    "title": "Buchgestaltung, Figurenprofile & Szenenwand",
+    "changes": [
+      "Export mit Projektcover, alternativem Cover oder ohne Cover; Schmutztitel mit wählbarem Titel, Autor, Reihe und Band.",
+      "Optionales Impressum unten auf eigener Seite, mittige Widmung und Inhaltsverzeichnis.",
+      "Prolog-/Epilog-Bezeichnungen ausblenden; Akttitel auf eigenen Seiten oder in Kapitelüberschriften, dazu Kopf- und Fußzeilen im Druck.",
+      "Exportoptionen werden im Projekt gespeichert. Zentrierte Textblöcke lassen sich im Manuskript per Button einfügen.",
+      "Figurenprofile mit Vorname, Nachname, Spitzname, Alter, Titel, Fraktion und bis zu zwei Rollen – auch in gemeinsamen Romanwelten.",
+      "Szenenwand: Kapitel als Zeilen, Szenen als Karten. Verschieben per Ziehen oder Auswählen und Einfügen, mit Sicherung und Rückgängig-Funktion.",
+      "Synchronisierung oben nur als Statussymbol; ausführliche Informationen stehen im Sync-Menü."
+    ]
+  },
+  {
     "version": "0.10.0",
     "date": "2026-09-11",
     "title": "Dein Schreibplatz – überblicken, finden und überarbeiten",

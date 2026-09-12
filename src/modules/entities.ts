@@ -1,3 +1,4 @@
+import { characterNames } from '../core/characters.ts';
 import type { Project } from '../core/model.ts';
 export type Entity = {
   key: string;
@@ -100,7 +101,7 @@ export function detectEntities(project: Project): Entity[] {
     for (const card of known) {
       const aliases = [
         card.title.trim(),
-        ...(card.aliases || [])
+        ...[...(card.aliases || []), ...characterNames(card.character)]
           .map((a) => a.trim())
           .filter(
             (a) =>
@@ -108,7 +109,11 @@ export function detectEntities(project: Project): Entity[] {
               !known.some(
                 (other) =>
                   other.id !== card.id &&
-                  [other.title, ...(other.aliases || [])].some(
+                  [
+                    other.title,
+                    ...(other.aliases || []),
+                    ...characterNames(other.character),
+                  ].some(
                     (n) =>
                       n.toLocaleLowerCase('de') === a.toLocaleLowerCase('de'),
                   ),

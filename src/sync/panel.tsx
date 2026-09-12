@@ -132,6 +132,19 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
           {new Date(sync.lastSync).toLocaleString('de')}
         </p>
       )}
+      <p className="sync-detail-status">
+        Status:{' '}
+        {
+          {
+            offline: 'Offline – Änderungen bleiben lokal.',
+            synced: 'Stand abgeglichen.',
+            busy: 'Synchronisierung läuft …',
+            auth: 'Google-Anmeldung erforderlich.',
+            attention: 'Synchronisierung prüfen.',
+            pending: 'Lokale Änderungen warten auf den Abgleich.',
+          }[sync.status]
+        }
+      </p>
       <output aria-live="polite">{sync.message}</output>
       <p className="muted small">
         Texte werden über HTTPS an dein Google Drive übertragen, jedoch nicht
