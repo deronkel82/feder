@@ -13,6 +13,8 @@ export type BookDesign = {
   contents?: boolean;
   hidePrologue?: boolean;
   hideEpilogue?: boolean;
+  prologuePage?: boolean;
+  prologueInChapter?: boolean;
   partPage?: boolean;
   partInChapter?: boolean;
   header?: string;
@@ -33,6 +35,8 @@ export const bookDesignDefaults: Required<
   contents: false,
   hidePrologue: false,
   hideEpilogue: false,
+  prologuePage: false,
+  prologueInChapter: true,
   partPage: false,
   partInChapter: true,
   header: '',
@@ -59,6 +63,8 @@ export function validBookDesign(o: BookDesign) {
       'contents',
       'hidePrologue',
       'hideEpilogue',
+      'prologuePage',
+      'prologueInChapter',
       'partPage',
       'partInChapter',
     ].every(

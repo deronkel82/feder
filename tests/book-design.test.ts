@@ -198,3 +198,89 @@ void test('character profile is searchable and nickname resolves to existing fig
   );
   assert.ok(detectEntities(p).some((e) => e.name === p.cards[0].title));
 });
+
+void test('series heading precedes book title and has a larger relative size', () => {
+  const p = seed().projects[0];
+  p.title = 'Einzelband';
+  p.series = { enabled: true, title: 'Die große Reihe', volume: '3' };
+  const html = exportDocument(p, { ...exportDefaults, halfTitleSeries: true });
+  assert.ok(
+    html.indexOf('<p class="series-title">Die große Reihe</p>') <
+      html.indexOf('<h1>Einzelband</h1>'),
+  );
+  assert.ok(html.includes('h1{font-size:1.6em}.series-title{font-size:2em'));
+  const no = exportDocument(p, { ...exportDefaults, halfTitleSeries: false });
+  assert.ok(!no.includes('>Die große Reihe<'));
+});
+void test('prologue title page and repeated chapter heading are independently configurable and survive validation', () => {
+  const l = seed(),
+    p = l.projects[0];
+  p.scenes[0].chapter = 'Vor dem Sturm';
+  p.chapterMeta = [
+    { name: 'Vor dem Sturm', kind: 'prologue', number: '', part: '' },
+  ];
+  p.exportOptions = {
+    ...exportDefaults,
+    titlePage: false,
+    prologuePage: true,
+    prologueInChapter: false,
+    hidePrologue: true,
+  };
+  const html = exportDocument(p);
+  assert.ok(
+    html.includes(
+      'class="front title-page prologue-page"><h1>Vor dem Sturm</h1>',
+    ),
+  );
+  assert.equal(html.split('<h1>Vor dem Sturm</h1>').length - 1, 1);
+  const repeated = exportDocument(p, {
+    ...p.exportOptions,
+    prologueInChapter: true,
+  });
+  assert.equal(repeated.split('<h1>Vor dem Sturm</h1>').length - 1, 2);
+  assert.doesNotThrow(() => validateLibrary(l));
+  const files = unzipSync(epubBytes(p));
+  assert.ok(strFromU8(files['EPUB/scene-0.xhtml']).includes('prologue-page'));
+  p.scenes[0].chapter = 'Prolog';
+  p.chapterMeta = [{ name: 'Prolog', kind: 'prologue', number: '', part: '' }];
+  assert.ok(
+    !exportDocument(p).includes('class="front title-page prologue-page"'),
+  );
+});
+void test('act title pages appear once per act and precede their chapter text', () => {
+  const p = seed().projects[0];
+  p.chapterMeta = [
+    {
+      name: p.scenes[0].chapter,
+      kind: 'chapter',
+      number: '1',
+      part: 'Akt Eins',
+    },
+    {
+      name: p.scenes[2].chapter,
+      kind: 'chapter',
+      number: '2',
+      part: 'Akt Zwei',
+    },
+  ];
+  const html = exportDocument(p, {
+    ...exportDefaults,
+    partPage: true,
+    partInChapter: false,
+  });
+  assert.equal(html.split('class="front title-page part-page"').length - 1, 2);
+  assert.ok(
+    html.indexOf('<h1>Akt Eins</h1>') <
+      html.indexOf(p.scenes[0].text.slice(0, 30)),
+  );
+  assert.ok(
+    html.indexOf('<h1>Akt Zwei</h1>') > html.indexOf('<h1>Akt Eins</h1>'),
+  );
+  const noPages = exportDocument(p, {
+    ...exportDefaults,
+    partPage: false,
+    partInChapter: false,
+  });
+  assert.ok(!noPages.includes('class="front title-page part-page"'));
+  assert.ok(!noPages.includes('>Akt Eins<'));
+});

@@ -185,3 +185,7 @@ Das wird in HTML, Druck/PDF und EPUB unterstützt. Andere Markdown-Programme mü
 **Figuren & Orte → Figur bearbeiten** bietet ein optionales Figurenprofil mit zwei kombinierbaren Rollen. Das Profil steht auch in der gemeinsamen Romanwelt bereit. Vollständiger Name und Spitzname unterstützen die lokale Erkennung, die Profile sind projektweit durchsuchbar.
 
 **Buchwerkzeuge → Szenenwand** zeigt Kapitelzeilen mit Szenenkarten und Einfügeflächen. Am Griff ziehen funktioniert mit Maus und Pointer-Touch; alternativ „Verschieben“ und das gewünschte „Hier einfügen“ auswählen. Text, Kommentare, Status und IDs bleiben erhalten. Vor jeder tatsächlichen Verschiebung wird eine Version gesichert. Die letzte Verschiebung kann unmittelbar zurückgenommen werden, solange das Projekt nicht anderweitig verändert wurde. Leere Kapitel bleiben in der Szenenwand als Einfügeziele erhalten. Die Ansicht setzt eingeschaltete Szenenmethodik voraus.
+
+## Druckkorrekturen (0.11.1)
+
+Der zugeschaltete Reihentitel steht auf dem Schmutztitel größer über dem Buchtitel. Unter Exportvorschau → Kapitel & Akte lässt sich der Prologtitel auf einer eigenen Seite und unabhängig davon über dem Prologtext anzeigen. Die bestehende Option zum Ausblenden der Bezeichnung „Prolog“ bleibt wirksam. Drucktitel verwenden ein Blocklayout und Seitenumbrüche am Anfang der Folgeseite, ohne gekoppelte Vor-/Nachumbrüche und seitenhohe Flex-Titelblöcke. Ein Testbuch mit Schmutztitel, Prologtitelseite, Prologtext und zwei Akt-/Kapitelpaaren wurde in Safaris A4-Druckvorschau geprüft: genau sieben Seiten.

@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.11.1",
+    "date": "2026-09-15",
+    "title": "Schmutztitel & verlässliche Seitenwechsel",
+    "changes": [
+      "Der Reihentitel steht auf dem Schmutztitel größer über dem Buchtitel.",
+      "Prologtitel wahlweise auf eigener Titelseite und zusätzlich über dem Prologtext anzeigen.",
+      "Drucklayout der Titelseiten und Seitenumbrüche bei Aktwechseln überarbeitet, um zusätzliche Leerseiten zu vermeiden."
+    ]
+  },
+  {
     "version": "0.11.0",
     "date": "2026-09-12",
     "title": "Buchgestaltung, Figurenprofile & Szenenwand",

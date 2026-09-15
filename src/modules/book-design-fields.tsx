@@ -141,6 +141,11 @@ export function BookDesignFields({
       </details>
       <details className="export-section">
         <summary>Kapitel & Akte</summary>
+        {check('prologuePage', 'Prologtitel auf einer eigenen Seite')}
+        {check(
+          'prologueInChapter',
+          'Prologtitel zusätzlich über dem Prologtext',
+        )}
         {check('hidePrologue', 'Bezeichnung „Prolog“ ausblenden')}
         {check('hideEpilogue', 'Bezeichnung „Epilog“ ausblenden')}
         {check('partPage', 'Akttitel auf einer eigenen Seite')}
@@ -149,8 +154,9 @@ export function BookDesignFields({
           'Akttitel zusätzlich in jeder Kapitelüberschrift',
         )}
         <p className="muted small">
-          Eigene Kapitel- und Szenentitel bleiben erhalten. Aktnamen legst du
-          beim Bearbeiten der Kapitel fest.
+          Der Prologtitel stammt aus dem Kapitelnamen. Ausgeblendete
+          Bezeichnungen erzeugen keine leere Titelseite. Eigene Szenentitel
+          bleiben erhalten. Aktnamen legst du beim Bearbeiten der Kapitel fest.
         </p>
       </details>
       <details className="export-section">

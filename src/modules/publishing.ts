@@ -103,7 +103,7 @@ function sections(
     add(
       'title',
       'Schmutztitel',
-      `<section class="front title-page">${o.halfTitleTitle ? `<h1>${escape(p.title)}</h1>` : ''}${o.halfTitleAuthor && !o.anonymous ? `<p>${escape(p.author)}</p>` : ''}${p.series.enabled && o.halfTitleSeries ? `<p>${escape(p.series.title)}</p>` : ''}${p.series.enabled && o.halfTitleVolume ? `<p>Band ${escape(p.series.volume)}</p>` : ''}</section>`,
+      `<section class="front title-page">${p.series.enabled && o.halfTitleSeries && p.series.title.trim() ? `<p class="series-title">${escape(p.series.title)}</p>` : ''}${o.halfTitleTitle ? `<h1>${escape(p.title)}</h1>` : ''}${o.halfTitleAuthor && !o.anonymous ? `<p>${escape(p.author)}</p>` : ''}${p.series.enabled && o.halfTitleVolume ? `<p>Band ${escape(p.series.volume)}</p>` : ''}</section>`,
     );
   if (o.imprintEnabled && o.imprint.trim())
     add(
@@ -126,6 +126,13 @@ function sections(
     const newPart = changed && c.part && c.part !== part;
     if (changed) part = c.part;
     const label = outputChapter(p, s, o);
+    const prologueTitle =
+      c.kind === 'prologue'
+        ? outputChapter(p, s, { ...o, partInChapter: false })
+        : '';
+    const ownProloguePage = changed && o.prologuePage && prologueTitle;
+    const chapterTitle =
+      c.kind === 'prologue' && !o.prologueInChapter ? '' : label;
     const sceneTitle =
       o.sceneHeadings &&
       usesScenes(p) &&
@@ -140,7 +147,7 @@ function sections(
       `scene-${i}`,
       [label, sceneTitle].filter(Boolean).join(' · ') ||
         (c.kind === 'epilogue' ? 'Ausklang' : 'Anfang'),
-      `${newPart && o.partPage ? `<section class="front title-page part-page"><h1>${escape(c.part)}</h1></section>` : ''}<section id="chapter-${i}" class="${changed ? 'chapter' : 'scene'}">${changed && label ? `<h1>${escape(label)}</h1>` : ''}${sceneTitle ? `<h2>${escape(sceneTitle)}</h2>` : ''}${paragraphs(s.text)}</section>`,
+      `${newPart && o.partPage ? `<section class="front title-page part-page"><h1>${escape(c.part)}</h1></section>` : ''}${ownProloguePage ? `<section class="front title-page prologue-page"><h1>${escape(prologueTitle)}</h1></section>` : ''}<section id="chapter-${i}" class="${changed ? 'chapter' : 'scene'}">${changed && chapterTitle ? `<h1>${escape(chapterTitle)}</h1>` : ''}${sceneTitle ? `<h2>${escape(sceneTitle)}</h2>` : ''}${paragraphs(s.text)}</section>`,
     );
   });
   return out;
@@ -164,7 +171,7 @@ export function exportStyles(options: ExportOptions) {
       : o.font === 'sans'
         ? 'Arial,sans-serif'
         : 'Georgia,serif';
-  return `@page{size:A4;margin:25mm}body{font:${o.size}pt/${o.line} ${font};color:#111;background:white;margin:0}p{margin:0 0 ${o.gap}pt;orphans:3;widows:3}h1{font-size:1.6em}h2{font-size:1.2em}h1,h2{break-after:avoid}.centered{text-align:center}.chapter{${o.chapterBreak ? 'break-before:page;' : ''}}.front{box-sizing:border-box;min-height:240mm;break-after:page;break-inside:avoid}.title-page{display:flex;flex-direction:column;justify-content:center;text-align:center}.imprint{display:flex;align-items:flex-end}.imprint>div{width:100%;overflow-wrap:anywhere}.cover-image{display:flex;align-items:center;justify-content:center}.cover-image img{max-width:100%;max-height:240mm;object-fit:contain}.part-page{break-before:page}.contents li{margin:8pt 0}.running{font-size:9pt;white-space:pre-wrap;text-align:center;overflow-wrap:anywhere}header.running{margin-bottom:12pt}footer.running{margin-top:12pt}main>section:first-child{break-before:auto}@media screen{body{padding:24px}.front{min-height:75vh;margin-bottom:32px;border-bottom:1px solid #ddd}.cover-image img{max-height:75vh}.imprint{min-height:75vh}}@media print{header.running,footer.running{position:fixed;left:0;right:0;margin:0;max-height:15mm;overflow:hidden}header.running{top:-18mm}footer.running{bottom:-18mm}}`;
+  return `@page{size:A4;margin:25mm}body{font:${o.size}pt/${o.line} ${font};color:#111;background:white;margin:0}p{margin:0 0 ${o.gap}pt;orphans:3;widows:3}h1{font-size:1.6em}.series-title{font-size:2em;font-weight:bold;line-height:1.2;margin:0 0 18pt;overflow-wrap:anywhere}h2{font-size:1.2em}h1,h2{break-after:avoid}.centered{text-align:center}.chapter{${o.chapterBreak ? 'break-before:page;' : ''}}.front{box-sizing:border-box;break-before:page;break-inside:avoid}.front+section{break-before:page}.title-page{display:block;padding:65mm 0 10mm;text-align:center}.title-page h1{break-after:auto;margin:0 0 18pt}.title-page p:last-child{margin-bottom:0}.imprint{min-height:230mm;display:flex;align-items:flex-end}.imprint>div{width:100%;overflow-wrap:anywhere}.cover-image{display:flex;align-items:center;justify-content:center}.cover-image img{max-width:100%;max-height:230mm;object-fit:contain}.contents li{margin:8pt 0}.running{font-size:9pt;white-space:pre-wrap;text-align:center;overflow-wrap:anywhere}header.running{margin-bottom:12pt}footer.running{margin-top:12pt}main>section:first-child,body>section:first-child{break-before:auto}@media screen{body{padding:24px}.front{min-height:75vh;margin-bottom:32px;border-bottom:1px solid #ddd}.title-page{padding:20vh 0 24px}.cover-image img{max-height:75vh}.imprint{min-height:75vh}}@media print{header.running,footer.running{position:fixed;left:0;right:0;margin:0;max-height:15mm;overflow:hidden}header.running{top:-18mm}footer.running{bottom:-18mm}}`;
 }
 export function exportDocument(
   p: Project,
