@@ -83,3 +83,18 @@ void test('permanent deletion atomically removes project history from update bac
   }
   assert.deepEqual((await load()).library, l);
 });
+
+void test('130,000-word novel survives saving and reloading without truncation', async () => {
+  const l = (await load()).library;
+  const text =
+    'Mara betrat das alte Haus. Eigentlich wollte sie wirklich nur ihren Brief abholen. '.repeat(
+      10000,
+    );
+  l.projects[0].scenes[0].text = text;
+  await save(l);
+  assert.equal((await load()).library.projects[0].scenes[0].text, text);
+  const changed = structuredClone(l);
+  changed.projects[0].scenes[0].text += '\nLetzter Satz. 😀';
+  await save(changed);
+  assert.deepEqual((await load()).library, changed);
+});

@@ -1,7 +1,7 @@
 import { isShort, usesScenes } from '../core/project-format';
 import { useEffect, useState, useRef } from 'react';
 import { uid, type Project } from '../core/model';
-import type { Entity } from './entities';
+import { recognitionInput, type Entity } from './entities';
 import { RefreshCw } from 'lucide-react';
 export function useEntities(project: Project, enabled = true) {
   const [request, setRequest] = useState(0);
@@ -61,7 +61,7 @@ export function useEntities(project: Project, enabled = true) {
               [],
               'Erkennung derzeit nicht verfügbar. Bitte erneut versuchen.',
             );
-          worker.postMessage({ id, project });
+          worker.postMessage({ id, project: recognitionInput(project) });
         } catch {
           finish(
             [],

@@ -13,12 +13,17 @@ import {
 import { SettingsDialog } from './modules/settings';
 import { readScheme, storeScheme, applyTheme } from './core/themes';
 import { ProjectCover } from './modules/covers';
-import { isOther, isStandalone, usesScenes } from './core/project-format';
+import {
+  isOther,
+  isStandalone,
+  usesScenes,
+  sceneCounts,
+} from './core/project-format';
 import { WritingProgress } from './modules/writing-progress';
 import { ManuscriptTree } from './modules/manuscript-tree';
 import { chapterLabel, orderedScenes } from './core/chapters';
 import { sendIdea } from './core/plotting';
-import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Feather,
   Plus,
@@ -59,10 +64,11 @@ import {
 } from '@/components/ui/select';
 import { modules } from './modules/registry';
 import { analyze } from './modules/analysis';
+import { useAnalysis } from './modules/use-analysis';
+import { createAutosave } from './core/autosave';
 import { load, save } from './core/storage';
 import {
   newScene,
-  words,
   type Project,
   type Scene,
   type Library as LibraryData,
@@ -181,11 +187,26 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
       sharedWorld ? { ...p, cards: [...p.cards, ...sharedWorld.cards] } : p,
     [p, sharedWorld],
   );
-  const recognition = useEntities(recognitionProject, !isOther(p));
+  const recognition = useEntities(
+    recognitionProject,
+    view === 'write' &&
+      panel &&
+      !focus &&
+      !isOther(p) &&
+      p.enabled.includes('world'),
+  );
   const s = p.scenes.find((s) => s.id === selected) || p.scenes[0];
   useWritingPosition(p.id, s.id, view === 'write', editor);
-  const deferred = useDeferredValue(s.text);
-  const findings = useMemo(() => analyze(deferred), [deferred]);
+  const analysis = useAnalysis(
+    s.text,
+    view === 'language' ||
+      (view === 'write' &&
+        panel &&
+        !focus &&
+        !isOther(p) &&
+        tab === 'language'),
+  );
+  const sceneWords = sceneCounts(s).words;
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     storeDarkMode(dark);
@@ -243,26 +264,37 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
       window.removeEventListener('offline', fn);
     };
   }, []);
+  const autosave = useMemo(
+    () =>
+      createAutosave<LibraryData>((value) => {
+        void save(value)
+          .then(() => {
+            setSaveError(null);
+            setSavedLibrary(value);
+          })
+          .catch((e) => setSaveError(e.message));
+      }),
+    [],
+  );
   useEffect(() => {
-    if (initial.error) return;
-    let current = true;
-    void save(library)
-      .then(() => {
-        if (current) {
-          setSaveError(null);
-          setSavedLibrary(library);
-        }
-      })
-      .catch((e) => {
-        if (current) setSaveError(e.message);
-      });
-    return () => {
-      current = false;
+    if (!initial.error) autosave.schedule(library);
+  }, [library, initial.error, autosave]);
+  useEffect(() => {
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') autosave.flush();
     };
-  }, [library, initial.error]);
+    window.addEventListener('pagehide', autosave.flush);
+    document.addEventListener('visibilitychange', hidden);
+    return () => {
+      window.removeEventListener('pagehide', autosave.flush);
+      document.removeEventListener('visibilitychange', hidden);
+      autosave.flush();
+    };
+  }, [autosave]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (!saved || saveError) {
+        autosave.flush();
         e.preventDefault();
         // Legacy Safari uses returnValue alongside preventDefault.
         // oxlint-disable-next-line typescript/no-deprecated
@@ -271,7 +303,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [saved, saveError]);
+  }, [saved, saveError, autosave]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(''), 4000);
@@ -672,9 +704,8 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       <span className={`status-dot status-${s.status}`} />
                       {s.status}
                       <span>·</span>
-                      {words(s.text)} Wörter<span>·</span>
-                      {Math.max(1, Math.ceil(words(s.text) / 200))} Min.
-                      Lesezeit
+                      {sceneWords} Wörter<span>·</span>
+                      {Math.max(1, Math.ceil(sceneWords / 200))} Min. Lesezeit
                     </div>
                   )}
                   {!isOther(p) && !s.text.trim() && (
@@ -689,7 +720,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   )}
                   <textarea
                     ref={editor}
-                    className="writing-text"
+                    className={`writing-text${s.text.length > 40000 ? ' writing-text-long' : ''}`}
                     spellCheck
                     lang="de"
                     aria-label="Manuskripttext"
@@ -707,11 +738,18 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     }
                     onSelect={(e) => {
                       const t = e.currentTarget;
-                      setSelection({
+                      const next = {
                         start: t.selectionStart,
                         end: t.selectionEnd,
                         word: t.value.slice(t.selectionStart, t.selectionEnd),
-                      });
+                      };
+                      setSelection((previous) =>
+                        previous.start === next.start &&
+                        previous.end === next.end &&
+                        previous.word === next.word
+                          ? previous
+                          : next,
+                      );
                     }}
                   />
                   <div className="end-mark">◇</div>
@@ -748,7 +786,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                 <div className="language-grid">
                   <section className="surface-card">
                     <h2>Stilanalyse</h2>
-                    <Findings findings={findings} select={selectRange} />
+                    <Findings
+                      findings={analysis.findings}
+                      total={analysis.total}
+                      pending={analysis.pending}
+                      error={'error' in analysis ? analysis.error : undefined}
+                      select={selectRange}
+                    />
                   </section>
                   <section className="surface-card">
                     <Thesaurus
@@ -950,7 +994,13 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   </div>
                 ) : (
                   <div className="inspector-body">
-                    <Findings findings={findings} select={selectRange} />
+                    <Findings
+                      findings={analysis.findings}
+                      total={analysis.total}
+                      pending={analysis.pending}
+                      error={'error' in analysis ? analysis.error : undefined}
+                      select={selectRange}
+                    />
                     <div className="sidebar-divider" />
                     <Thesaurus
                       selected={selection.word}
@@ -1159,16 +1209,27 @@ function Navigation({
 }
 function Findings({
   findings,
+  total,
+  pending,
+  error,
   select,
 }: {
   findings: ReturnType<typeof analyze>;
+  total: number;
+  pending: boolean;
+  error?: string;
   select: (a: number, b: number) => void;
 }) {
+  if (pending || error)
+    return (
+      <output className="muted">
+        {error || 'Text wird im Hintergrund geprüft …'}
+      </output>
+    );
   return (
     <>
       <p className="muted small">
-        {findings.length} Hinweise · Regelbasierte Schreibhilfe, kein
-        Korrektorat.
+        {total} Hinweise · Regelbasierte Schreibhilfe, kein Korrektorat.
       </p>
       {findings.length === 0 ? (
         <div className="empty-analysis">

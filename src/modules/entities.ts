@@ -90,7 +90,28 @@ type Mention = {
   knownId?: string;
   strong: boolean;
 };
-export function detectEntities(project: Project): Entity[] {
+export type RecognitionInput = {
+  scenes: Pick<Project['scenes'][number], 'id' | 'text'>[];
+  cards: Pick<
+    Project['cards'][number],
+    'id' | 'title' | 'kind' | 'aliases' | 'character'
+  >[];
+  dismissedEntities: string[];
+};
+export function recognitionInput(project: Project): RecognitionInput {
+  return {
+    scenes: project.scenes.map(({ id, text }) => ({ id, text })),
+    cards: project.cards.map(({ id, title, kind, aliases, character }) => ({
+      id,
+      title,
+      kind,
+      aliases,
+      character,
+    })),
+    dismissedEntities: project.dismissedEntities,
+  };
+}
+export function detectEntities(project: RecognitionInput): Entity[] {
   const mentions: Mention[] = [];
   const known = project.cards.filter(
     (c) => (c.kind === 'Figur' || c.kind === 'Ort') && c.title.trim(),

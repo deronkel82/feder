@@ -48,31 +48,34 @@ export function ManuscriptTree({
       /* local preference only */
     }
   };
-  const groups = chapterGroups(project)
-    .map((g) => ({
-      ...g,
-      chapters: g.chapters
-        .map((c) => ({
-          ...c,
-          scenes: c.scenes.filter((s) =>
-            (
-              s.title +
-              ' ' +
-              s.text +
-              ' ' +
-              s.synopsis +
-              ' ' +
-              c.label +
-              ' ' +
-              g.part
-            )
-              .toLocaleLowerCase('de')
-              .includes(query.toLocaleLowerCase('de')),
-          ),
+  const normalizedQuery = query.toLocaleLowerCase('de');
+  const groups = !query
+    ? chapterGroups(project)
+    : chapterGroups(project)
+        .map((g) => ({
+          ...g,
+          chapters: g.chapters
+            .map((c) => ({
+              ...c,
+              scenes: c.scenes.filter((s) =>
+                (
+                  s.title +
+                  ' ' +
+                  s.text +
+                  ' ' +
+                  s.synopsis +
+                  ' ' +
+                  c.label +
+                  ' ' +
+                  g.part
+                )
+                  .toLocaleLowerCase('de')
+                  .includes(normalizedQuery),
+              ),
+            }))
+            .filter((c) => c.scenes.length),
         }))
-        .filter((c) => c.scenes.length),
-    }))
-    .filter((g) => g.chapters.length);
+        .filter((g) => g.chapters.length);
   if (isStandalone(project))
     return (
       <div className="scene-list">

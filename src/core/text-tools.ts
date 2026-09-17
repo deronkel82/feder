@@ -13,7 +13,7 @@ export function reanchorComments(
   scene: Scene,
   text: string,
 ): TextComment[] | undefined {
-  if (!scene.comments) return undefined;
+  if (!scene.comments?.length) return scene.comments;
   let start = 0;
   while (
     start < scene.text.length &&

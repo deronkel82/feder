@@ -66,8 +66,8 @@ export function ExportPreview({
     update((p) => ({ ...p, exportOptions: normalized }));
   };
   const html = useMemo(
-    () => exportDocument(project, options),
-    [project, options],
+    () => (open ? exportDocument(project, options) : ''),
+    [project, options, open],
   );
   return (
     <>

@@ -3312,3 +3312,12 @@ select:focus-visible {
 .scene-board > .review-options {
   min-height: 44px;
 }
+
+/* Keep native text layout bounded even when a whole novel is one scene. */
+.writing-text.writing-text-long {
+  field-sizing: fixed;
+  flex: none;
+  height: 65dvh;
+  min-height: 320px;
+  overflow-y: auto;
+}

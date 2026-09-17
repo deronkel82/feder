@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.11.2",
+    "date": "2026-09-17",
+    "title": "Flüssiger schreiben in großen Romanen",
+    "changes": [
+      "Sprachanalyse läuft bei geöffnetem Werkzeug im Hintergrund und blockiert die Texteingabe nicht mehr.",
+      "Wort- und Zeichenzählung verwendet bereits berechnete Kapitelwerte; die Navigation durchsucht Texte nur bei einer Suchanfrage.",
+      "Automatisches Speichern bündelt schnelle Eingaben und sichert bei fortlaufendem Schreiben spätestens nach zwei Sekunden.",
+      "Sehr lange Einzeltexte erhalten einen eigenen Scrollbereich; die Figuren- und Ortserkennung läuft nur bei sichtbaren Vorschlägen und überträgt weniger Daten."
+    ]
+  },
+  {
     "version": "0.11.1",
     "date": "2026-09-15",
     "title": "Schmutztitel & verlässliche Seitenwechsel",

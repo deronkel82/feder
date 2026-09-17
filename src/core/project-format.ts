@@ -17,13 +17,36 @@ export const usesScenes = (p: Project) =>
   !isStandalone(p) && p.sceneMode !== false;
 export const defaultTarget = (format: ProjectFormat) =>
   ({ novel: 50000, novella: 20000, short: 2500, other: 1 })[format];
+const countCache = new WeakMap<
+  Scene,
+  { text: string; words: number; characters: number }
+>();
+export function sceneCounts(scene: Scene) {
+  let counts = countCache.get(scene);
+  if (!counts || counts.text !== scene.text) {
+    const normalized = scene.text.replace(/\r\n?/g, '\n');
+    let length = 0;
+    for (const _character of normalized) length++;
+    counts = { text: scene.text, words: words(normalized), characters: length };
+    countCache.set(scene, counts);
+  }
+  return counts;
+}
 export function manuscriptCounts(p: Project) {
-  const text = orderedScenes(p)
-    .map((s) => s.text)
-    .filter(Boolean)
-    .join('\n\n')
-    .replace(/\r\n?/g, '\n');
-  return { words: words(text), characters: Array.from(text).length };
+  let wordCount = 0,
+    characters = 0,
+    nonempty = 0;
+  for (const scene of p.scenes) {
+    if (!scene.text) continue;
+    const counts = sceneCounts(scene);
+    wordCount += counts.words;
+    characters += counts.characters;
+    nonempty++;
+  }
+  return {
+    words: wordCount,
+    characters: characters + Math.max(0, nonempty - 1) * 2,
+  };
 }
 export function progressLimits(p: Project) {
   const counts = manuscriptCounts(p);

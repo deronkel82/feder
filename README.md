@@ -189,3 +189,9 @@ Das wird in HTML, Druck/PDF und EPUB unterstützt. Andere Markdown-Programme mü
 ## Druckkorrekturen (0.11.1)
 
 Der zugeschaltete Reihentitel steht auf dem Schmutztitel größer über dem Buchtitel. Unter Exportvorschau → Kapitel & Akte lässt sich der Prologtitel auf einer eigenen Seite und unabhängig davon über dem Prologtext anzeigen. Die bestehende Option zum Ausblenden der Bezeichnung „Prolog“ bleibt wirksam. Drucktitel verwenden ein Blocklayout und Seitenumbrüche am Anfang der Folgeseite, ohne gekoppelte Vor-/Nachumbrüche und seitenhohe Flex-Titelblöcke. Ein Testbuch mit Schmutztitel, Prologtitelseite, Prologtext und zwei Akt-/Kapitelpaaren wurde in Safaris A4-Druckvorschau geprüft: genau sieben Seiten.
+
+### Große Manuskripte
+
+Ab 0.11.2 verwendet die Wort-/Zeichenzählung einen Cache pro Szene. Die Sprachanalyse läuft ausschließlich bei sichtbarem Werkzeug in einem Web Worker, nach einer kurzen Schreibpause; währenddessen werden keine veralteten Textstellen angeboten. Die lokale Erkennung überträgt nur benötigte Text- und Namensdaten. Einzeltexte über 40.000 Zeichen werden vollständig in einem begrenzten, scrollbareren Editor dargestellt.
+
+Autosave bündelt Eingaben nach 450 ms Schreibpause, spätestens nach 2 Sekunden bei fortlaufenden Änderungen. Beim Verbergen oder Verlassen der Seite wird ausstehendes Speichern sofort angestoßen. Der Hinweis auf ungespeicherte Änderungen sowie die IndexedDB-Konfliktprüfung bleiben erhalten. Ein abruptes Beenden des Betriebssystems kann eine ausstehende Speicherung weiterhin unterbrechen. Regressionstests prüfen 130.000 Wörter, Unicode-Zählung, vollständiges Speichern/Laden und die maximale Wartezeit des Autosave.
