@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { BookOpen, Upload, Trash2 } from 'lucide-react';
+import { BookOpen, Upload, Trash2, Maximize2 } from 'lucide-react';
 import type { Project } from '../core/model';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { readCover } from './cover-image';
 export function ProjectCover({
   project,
@@ -40,6 +41,7 @@ export function CoverEditor({
       <ProjectCover project={project} />
       <div>
         <h3>Buchcover</h3>
+        <CoverFullscreen project={project} />
         <p className="muted small">
           JPG, PNG oder WebP · maximal 20 MB. Das Bild wird platzsparend auf
           diesem Gerät gespeichert und in JSON-Sicherungen mitgenommen.
@@ -95,5 +97,37 @@ export function CoverEditor({
         {message && <output className="cover-message">{message}</output>}
       </div>
     </section>
+  );
+}
+
+export function CoverFullscreen({
+  project,
+}: {
+  project: Pick<Project, 'title' | 'cover'>;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!project.cover) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="cover-fullscreen-trigger"
+        aria-label={`Cover von ${project.title || 'Ohne Titel'} im Vollbild anzeigen`}
+        onClick={() => setOpen(true)}
+      >
+        <Maximize2 size={16} /> Cover ansehen
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          className="cover-fullscreen"
+          aria-describedby={undefined}
+        >
+          <DialogTitle>{project.title || 'Buchcover'}</DialogTitle>
+          {/* Local, validated image data. */}
+          {/* oxlint-disable-next-line next/no-img-element */}
+          <img src={project.cover} alt={`Buchcover: ${project.title}`} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

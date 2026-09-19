@@ -208,7 +208,7 @@ void test('series heading precedes book title and has a larger relative size', (
     html.indexOf('<p class="series-title">Die große Reihe</p>') <
       html.indexOf('<h1>Einzelband</h1>'),
   );
-  assert.ok(html.includes('h1{font-size:1.6em}.series-title{font-size:2em'));
+  assert.ok(html.includes('h1{font-size:1.6em}.series-title{font-size:24pt'));
   const no = exportDocument(p, { ...exportDefaults, halfTitleSeries: false });
   assert.ok(!no.includes('>Die große Reihe<'));
 });
@@ -283,4 +283,54 @@ void test('act title pages appear once per act and precede their chapter text', 
   });
   assert.ok(!noPages.includes('class="front title-page part-page"'));
   assert.ok(!noPages.includes('>Akt Eins<'));
+});
+
+void test('print margins and series placement roundtrip and reject invalid settings', () => {
+  const l = seed(),
+    p = l.projects[0];
+  p.series = { enabled: true, title: 'Eine Reihe', volume: '3' };
+  p.exportOptions = {
+    ...exportDefaults,
+    halfTitleSeries: true,
+    halfTitleSeriesSize: 32,
+    halfTitleSeriesPosition: 'below',
+    marginTop: 15,
+    marginBottom: 35,
+    marginLeft: 20,
+    marginRight: 30,
+  };
+  p.exportPresets = [
+    { id: 'layout', name: 'Mein Druck', options: { ...p.exportOptions } },
+  ];
+  assert.deepEqual(validateLibrary(JSON.parse(JSON.stringify(l))), l);
+  const html = exportDocument(p);
+  assert.ok(html.includes('@page{size:A4;margin:15mm 30mm 35mm 20mm}'));
+  assert.ok(html.includes('.series-title{font-size:32pt'));
+  assert.ok(
+    html.indexOf(`<h1>${p.title}</h1>`) <
+      html.indexOf('<p class="series-title">Eine Reihe</p>'),
+  );
+  assert.ok(html.includes('min-height:230mm'));
+  const above = exportDocument(p, {
+    ...p.exportOptions,
+    halfTitleSeriesPosition: 'above',
+    marginTop: 50,
+    marginBottom: 50,
+  });
+  assert.ok(
+    above.indexOf('<p class="series-title">Eine Reihe</p>') <
+      above.indexOf(`<h1>${p.title}</h1>`),
+  );
+  assert.ok(above.includes('min-height:180mm'));
+  for (const patch of [
+    { marginTop: -1 },
+    { marginRight: 51 },
+    { marginBottom: Infinity },
+    { halfTitleSeriesSize: 0 },
+    { halfTitleSeriesPosition: 'invalid' },
+  ]) {
+    const invalid = structuredClone(l);
+    Object.assign(invalid.projects[0].exportOptions!, patch);
+    assert.throws(() => validateLibrary(invalid));
+  }
 });

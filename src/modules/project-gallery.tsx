@@ -16,7 +16,7 @@ import {
   moveProject,
   type ProjectSort,
 } from '../core/project-gallery';
-import { ProjectCover } from './covers';
+import { ProjectCover, CoverFullscreen } from './covers';
 function usePreference<T extends string>(
   key: string,
   fallback: T,
@@ -215,6 +215,7 @@ export function ProjectGallery({
                 <small className="project-active-badge">Aktiv</small>
               )}
             </button>
+            <CoverFullscreen project={p} />
             {sort === 'manual' && (
               <div className="gallery-move-controls">
                 <button
