@@ -6,6 +6,7 @@ export type BookDesign = {
   marginRight?: number;
   halfTitleSeriesSize?: number;
   halfTitleSeriesPosition?: 'above' | 'below';
+  halfTitleAuthorPosition?: 'above' | 'below';
   coverMode?: 'none' | 'project' | 'alternative';
   alternativeCover?: string;
   halfTitleTitle?: boolean;
@@ -35,6 +36,7 @@ export const bookDesignDefaults: Required<
   marginRight: 25,
   halfTitleSeriesSize: 24,
   halfTitleSeriesPosition: 'above',
+  halfTitleAuthorPosition: 'below',
   coverMode: 'none',
   halfTitleTitle: true,
   halfTitleAuthor: true,
@@ -68,6 +70,8 @@ export function validBookDesign(o: BookDesign) {
       (Number.isFinite(o.halfTitleSeriesSize) &&
         o.halfTitleSeriesSize >= 8 &&
         o.halfTitleSeriesSize <= 72)) &&
+    (o.halfTitleAuthorPosition === undefined ||
+      ['above', 'below'].includes(o.halfTitleAuthorPosition)) &&
     (o.halfTitleSeriesPosition === undefined ||
       ['above', 'below'].includes(o.halfTitleSeriesPosition)) &&
     (o.coverMode === undefined ||

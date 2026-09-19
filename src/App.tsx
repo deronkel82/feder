@@ -26,6 +26,8 @@ import { sendIdea } from './core/plotting';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Feather,
+  Printer,
+  AlignCenter,
   Plus,
   Search,
   Settings2,
@@ -80,6 +82,7 @@ import { useEntities, EntityPanel } from './modules/entity-panel';
 import { reviseScene } from './core/history';
 import { Versions } from './modules/versions';
 import { ProjectDialog } from './modules/projects';
+import { ExportPreview } from './modules/export-preview';
 import { readDarkMode, storeDarkMode } from './core/preferences';
 import {
   reorderInChapter,
@@ -156,6 +159,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [panel, setPanel] = useState(window.innerWidth >= 1200);
   const [focus, setFocus] = useState(false);
   const [projectDialog, setProjectDialog] = useState(false);
+  const [exportDialog, setExportDialog] = useState(false);
   const [settings, setSettings] = useState(false);
   const [settingsSection, setSettingsSection] = useState('appearance');
   const [versionDialog, setVersionDialog] = useState(false);
@@ -495,14 +499,21 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
               </span>
               <button
                 className="top-project-picker"
-                title={`Projekte & Export – ${p.title}`}
-                aria-label={`Projekte & Export öffnen, aktuell: ${p.title}`}
+                title={`Projektverwaltung – ${p.title}`}
+                aria-label={`Projektverwaltung öffnen, aktuell: ${p.title}`}
                 onClick={() => setProjectDialog(true)}
               >
                 <ProjectCover project={p} className="toolbar-cover" />
                 <span className="top-project-title">
                   {p.title || 'Dein Projekt'}
                 </span>
+              </button>
+              <button
+                title="Export & Druck"
+                aria-label="Export & Druck"
+                onClick={() => setExportDialog(true)}
+              >
+                <Printer size={18} />
               </button>
               <button
                 title="Module & Einstellungen"
@@ -650,10 +661,11 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                       <i>I</i>
                     </button>
                     <button
+                      aria-label="Zentrieren"
                       title="Markierten Text für die Ausgabe zentrieren (:::center)"
                       onClick={centerText}
                     >
-                      Zentrieren
+                      <AlignCenter size={17} />
                     </button>
                     <span className="toolbar-divider" />
                     <span className="font-label">Literarisch</span>
@@ -1089,6 +1101,16 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           jumpTo(id, start, end);
         }}
       />
+      {exportDialog && (
+        <ExportPreview
+          key={p.id}
+          project={p}
+          update={update}
+          disabled={!!saveError}
+          open={exportDialog}
+          setOpen={setExportDialog}
+        />
+      )}
       <ProjectDialog
         open={projectDialog}
         setOpen={setProjectDialog}

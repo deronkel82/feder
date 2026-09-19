@@ -1,3 +1,5 @@
+import { chapterGroups } from '../core/chapters';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { BookDesignFields } from './book-design-fields';
 import { bookDesignDefaults } from '../core/book-design';
 import { useState, useMemo, useRef } from 'react';
@@ -40,13 +42,16 @@ export function ExportPreview({
   project,
   update,
   disabled,
+  open,
+  setOpen,
 }: {
   project: Project;
   update: (fn: (p: Project) => Project) => void;
   disabled: boolean;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false),
-    [options, setOptionsState] = useState<ExportOptions>(() => ({
+  const [options, setOptionsState] = useState<ExportOptions>(() => ({
       ...bookDesignDefaults,
       ...(project.exportOptions || exportDefaults),
     })),
@@ -69,14 +74,30 @@ export function ExportPreview({
     () => (open ? exportDocument(project, options) : ''),
     [project, options, open],
   );
+  const manuscript = () =>
+    `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
+    (isStandalone(project)
+      ? project.scenes[0].text
+      : chapterGroups(project)
+          .map(
+            (g) =>
+              (g.part ? '## ' + g.part + '\n\n' : '') +
+              g.chapters
+                .map(
+                  (c) =>
+                    `### ${c.label}\n\n` +
+                    c.scenes
+                      .map(
+                        (s) =>
+                          `${usesScenes(project) ? '#### ' + s.title + '\n\n' : ''}${s.text}`,
+                      )
+                      .join('\n\n'),
+                )
+                .join('\n\n'),
+          )
+          .join('\n\n'));
   return (
     <>
-      <button onClick={() => setOpen(true)}>
-        <span>
-          Exportvorschau & Vorlagen
-          <small>Layout prüfen · Druck/PDF, EPUB oder HTML</small>
-        </span>
-      </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="project-dialog export-preview">
           <DialogTitle>Export · {project.title}</DialogTitle>
@@ -247,6 +268,18 @@ export function ExportPreview({
             </section>
           </div>
           <div className="review-options">
+            <button
+              onClick={() =>
+                download(
+                  manuscript(),
+                  safeName(project.title) + '.md',
+                  'text/markdown',
+                )
+              }
+            >
+              Markdown herunterladen
+            </button>
+
             <button
               className="primary-button"
               onClick={() => printBook(project, options)}

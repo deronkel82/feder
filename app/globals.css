@@ -1300,8 +1300,8 @@ small,
   font-size: 13px;
 }
 .focus-mode .manuscript {
-  padding-left: max(25px, calc((100% - 740px) /2));
-  padding-right: max(25px, calc((100% - 740px) /2));
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
 }
 .active-icon {
   background: var(--accent);

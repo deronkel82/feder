@@ -1,4 +1,3 @@
-import { ExportPreview } from './export-preview';
 import { ProjectExtras, PurgeButton } from './library-extras';
 import { AuthorFields } from './authors';
 import { applyDefaultAuthor, setDefaultAuthor } from '../core/authors';
@@ -23,7 +22,6 @@ import {
   usesScenes,
   defaultTarget,
 } from '../core/project-format';
-import { chapterGroups } from '../core/chapters';
 import { useState } from 'react';
 import {
   Plus,
@@ -46,12 +44,7 @@ import {
   type Project,
   type Library,
 } from '../core/model';
-import {
-  download,
-  safeName,
-  rawBackup,
-  recoveryBackups,
-} from '../core/storage';
+import { download, rawBackup, recoveryBackups } from '../core/storage';
 import { SeriesFields } from './series';
 import { Versions } from './versions';
 export function ProjectDialog({
@@ -173,28 +166,6 @@ export function ProjectDialog({
       setMessage(e instanceof Error ? e.message : 'Import fehlgeschlagen.');
     }
   }
-  const manuscript = () =>
-    `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
-    (isStandalone(project)
-      ? project.scenes[0].text
-      : chapterGroups(project)
-          .map(
-            (g) =>
-              (g.part ? '## ' + g.part + '\n\n' : '') +
-              g.chapters
-                .map(
-                  (c) =>
-                    `### ${c.label}\n\n` +
-                    c.scenes
-                      .map(
-                        (s) =>
-                          `${usesScenes(project) ? '#### ' + s.title + '\n\n' : ''}${s.text}`,
-                      )
-                      .join('\n\n'),
-                )
-                .join('\n\n'),
-          )
-          .join('\n\n'));
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
@@ -438,14 +409,8 @@ export function ProjectDialog({
             onChange={(series) => update((p) => ({ ...p, series }))}
           />
         )}
-        <h2 className="dialog-section">Mitnehmen & sichern</h2>
+        <h2 className="dialog-section">Sicherung & Import</h2>
         <div className="export-grid">
-          <ExportPreview
-            key={project.id}
-            project={project}
-            update={update}
-            disabled={!!error}
-          />
           <button
             onClick={() =>
               download(JSON.stringify(library, null, 2), 'Feder-Sicherung.json')
@@ -455,49 +420,6 @@ export function ProjectDialog({
             <span>
               Komplette Sicherung
               <small>Alle Bücher, Karten und Versionen · JSON</small>
-            </span>
-          </button>
-          <button
-            onClick={() =>
-              download(
-                manuscript(),
-                safeName(project.title) + '.md',
-                'text/markdown',
-              )
-            }
-          >
-            <Download size={18} />
-            <span>
-              Manuskript<small>Markdown · offenes Textformat</small>
-            </span>
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                const { exportEpub } = await import('./publishing');
-                await exportEpub(project);
-                setMessage('EPUB exportiert.');
-              } catch {
-                setMessage(
-                  'EPUB-Export fehlgeschlagen. Bitte sichere dein Manuskript als Markdown.',
-                );
-              }
-            }}
-          >
-            <Download size={18} />
-            <span>
-              E-Book<small>EPUB · für E-Reader</small>
-            </span>
-          </button>
-          <button
-            onClick={async () => {
-              const { printBook } = await import('./publishing');
-              printBook(project);
-            }}
-          >
-            <Download size={18} />
-            <span>
-              Drucken / PDF<small>Über den Druckdialog deines Browsers</small>
             </span>
           </button>
           <label className="import-button">

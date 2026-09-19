@@ -199,3 +199,7 @@ Autosave bündelt Eingaben nach 450 ms Schreibpause, spätestens nach 2 Sekunden
 ### Druckränder und Coveransicht
 
 Ab 0.12.0 lassen sich unter „Exportvorschau & Vorlagen“ die vier A4-Seitenränder getrennt zwischen 5 und 50 mm einstellen. Für Kopf- und Fußzeilen mindestens 15 mm Platz lassen. Die Reihennamen-Größe auf dem Schmutztitel ist zwischen 8 und 72 pt wählbar; der Reihenname steht wahlweise über oder unter dem Titelblock. Die Optionen bleiben im Projekt und in eigenen Exportvorlagen erhalten. „Cover ansehen“ in der Projektübersicht oder den Cover-Einstellungen öffnet eine bildschirmfüllende Ansicht ohne Beschnitt; Schließen oder Escape führt zurück.
+
+### Schreibfläche und Exportzugang
+
+Ab 0.13.0 öffnet der eigene Drucker-Button „Export & Druck“ in der oberen Werkzeugleiste alle Exportoptionen sowie Markdown, HTML, EPUB und Druck/PDF. Sicherung und Import bleiben in der Projektverwaltung. Der Fokusmodus nutzt die volle verfügbare Breite mit schmalem Sicherheitsabstand zum Bildschirmrand. Auf dem Schmutztitel bilden Reihe, Buchtitel und Band einen Titelblock: Die Reihe steht vor oder nach dem Buchtitel, der Autor unabhängig davon vor oder nach dem ganzen Block.

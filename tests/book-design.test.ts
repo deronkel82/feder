@@ -334,3 +334,48 @@ void test('print margins and series placement roundtrip and reject invalid setti
     assert.throws(() => validateLibrary(invalid));
   }
 });
+
+void test('title block keeps series, title and volume together with independent author position', () => {
+  const l = seed(),
+    p = l.projects[0];
+  p.title = 'Buchtitel';
+  p.author = 'Autorname';
+  p.series = { enabled: true, title: 'Reihenname', volume: '4' };
+  for (const seriesPosition of ['above', 'below'] as const) {
+    for (const authorPosition of ['above', 'below'] as const) {
+      p.exportOptions = {
+        ...exportDefaults,
+        halfTitleSeries: true,
+        halfTitleVolume: true,
+        halfTitleSeriesPosition: seriesPosition,
+        halfTitleAuthorPosition: authorPosition,
+      };
+      assert.deepEqual(validateLibrary(JSON.parse(JSON.stringify(l))), l);
+      const html = exportDocument(p);
+      const title = html.match(
+        /<section class="front title-page">([\s\S]*?)<\/section>/,
+      )![1];
+      const block = title.match(
+        /<div class="title-block">([\s\S]*?)<\/div>/,
+      )![1];
+      assert.ok(block.includes('Band 4'));
+      assert.ok(!block.includes('Autorname'));
+      assert.equal(
+        block.indexOf('Reihenname') < block.indexOf('Buchtitel'),
+        seriesPosition === 'above',
+      );
+      assert.ok(block.indexOf('Band 4') > block.indexOf('Buchtitel'));
+      assert.equal(
+        title.indexOf('Autorname') < title.indexOf('class="title-block"'),
+        authorPosition === 'above',
+      );
+      assert.ok(
+        !exportDocument(p, { ...p.exportOptions, anonymous: true }).includes(
+          'Autorname',
+        ),
+      );
+    }
+  }
+  Object.assign(p.exportOptions!, { halfTitleAuthorPosition: 'invalid' });
+  assert.throws(() => validateLibrary(l));
+});

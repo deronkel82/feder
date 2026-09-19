@@ -164,6 +164,26 @@ export function BookDesignFields({
           <div className="export-suboptions">
             {check('halfTitleTitle', 'Buchtitel')}
             {check('halfTitleAuthor', 'Autor')}
+            {o.halfTitleAuthor && !o.anonymous && (
+              <label className="field-label">
+                Position des Autors
+                <select
+                  value={o.halfTitleAuthorPosition}
+                  onChange={(e) =>
+                    change({
+                      ...o,
+                      halfTitleAuthorPosition: e.target.value as
+                        | 'above'
+                        | 'below',
+                    })
+                  }
+                >
+                  <option value="above">Über dem Titelblock</option>
+                  <option value="below">Unter dem Titelblock</option>
+                </select>
+              </label>
+            )}
+
             {project.series.enabled && (
               <>
                 {check('halfTitleSeries', 'Reihenname')}
@@ -197,13 +217,13 @@ export function BookDesignFields({
                           })
                         }
                       >
-                        <option value="above">Über dem Titelblock</option>
-                        <option value="below">Unter dem Titelblock</option>
+                        <option value="above">Über dem Buchtitel</option>
+                        <option value="below">Unter dem Buchtitel</option>
                       </select>
                     </label>
                     <p className="muted small">
-                      Der Titelblock enthält die ausgewählten Angaben zu
-                      Buchtitel, Autor und Band.
+                      Reihenname, Buchtitel und Bandnummer bilden zusammen den
+                      Titelblock.
                     </p>
                   </>
                 )}
