@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { type Library, type Project, words } from '../core/model';
-import { usesScenes } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { chapterLabel, chapterDetails } from '../core/chapters';
 import { boardChapters, placeScene } from '../core/scene-board';
 export function SceneBoard({
@@ -62,7 +62,7 @@ export function SceneBoard({
         key={key}
         data-scene-drop={key}
         disabled={disabled}
-        aria-label={`${before ? 'Vor Szene einfügen' : 'Am Kapitelende einfügen'}: ${chapterLabel(project, chapter)}`}
+        aria-label={`${before ? 'Vor Szene einfügen' : isStandalone(project) ? 'Am Ende einfügen' : 'Am Kapitelende einfügen'}: ${isStandalone(project) ? project.title : chapterLabel(project, chapter)}`}
         onClick={() => move(chapter, before)}
         onDragOver={(e) => {
           if (selected && !disabled) {
@@ -83,9 +83,11 @@ export function SceneBoard({
   return (
     <section className="scene-board">
       <p>
-        Jede Zeile ist ein Kapitel. Ziehe Szenen am Griff auf eine Einfügestelle
-        – oder wähle „Verschieben“ und anschließend „Hier einfügen“. Leere
-        Kapitel bleiben hier als Ziel erhalten.
+        {isStandalone(project)
+          ? 'Ordne die Szenen deiner Kurzgeschichte.'
+          : 'Jede Zeile ist ein Kapitel. Leere Kapitel bleiben als Ziel erhalten.'}{' '}
+        Ziehe Szenen am Griff auf eine Einfügestelle – oder wähle „Verschieben“
+        und anschließend „Hier einfügen“.
       </p>
       <div className="review-options">
         {selected && (
@@ -128,10 +130,11 @@ export function SceneBoard({
       {boardChapters(project).map((chapter) => (
         <section className="scene-board-row" key={chapter}>
           <h3>
-            {chapterDetails(project, chapter).part && (
-              <small>{chapterDetails(project, chapter).part} · </small>
-            )}
-            {chapterLabel(project, chapter)}
+            {!isStandalone(project) &&
+              chapterDetails(project, chapter).part && (
+                <small>{chapterDetails(project, chapter).part} · </small>
+              )}
+            {isStandalone(project) ? 'Szenen' : chapterLabel(project, chapter)}
           </h3>
           <div className="scene-board-cards">
             {project.scenes

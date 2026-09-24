@@ -76,7 +76,7 @@ export function ManuscriptTree({
             .filter((c) => c.scenes.length),
         }))
         .filter((g) => g.chapters.length);
-  if (isStandalone(project))
+  if (isStandalone(project) && !usesScenes(project))
     return (
       <div className="scene-list">
         <button
@@ -91,6 +91,45 @@ export function ManuscriptTree({
         </button>
       </div>
     );
+  if (isStandalone(project) && usesScenes(project)) {
+    const scenes = project.scenes.filter(
+      (s) =>
+        !query ||
+        `${s.title} ${s.text} ${s.synopsis}`
+          .toLocaleLowerCase('de')
+          .includes(normalizedQuery),
+    );
+    return (
+      <div className="scene-list manuscript-tree">
+        {scenes.map((s) => (
+          <div className="scene-nav-row" key={s.id}>
+            <button
+              className={`scene-button ${selected === s.id ? 'selected' : ''}`}
+              onClick={() => {
+                open(s.id);
+                setOpenMobile(false);
+              }}
+            >
+              <FileText size={14} />
+              <span>{s.title}</span>
+              <span className={`status-dot status-${s.status}`} />
+            </button>
+            <button
+              className="scene-options"
+              title="Szene verwalten"
+              aria-label={`Szene ${s.title} verwalten`}
+              onClick={() => manage({ kind: 'scene', id: s.id })}
+            >
+              <MoreHorizontal size={16} />
+            </button>
+          </div>
+        ))}
+        {!scenes.length && (
+          <p className="muted empty-small">Keine Szene gefunden.</p>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="scene-list manuscript-tree">
       {groups.map((g) => (

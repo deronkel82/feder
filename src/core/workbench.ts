@@ -1,3 +1,4 @@
+import { isStandalone, usesScenes } from './project-format.ts';
 import { validBookDesign, type BookDesign } from './book-design.ts';
 import { characterSearch } from './characters.ts';
 import { type Library, type Project, type Scene, type Card } from './model.ts';
@@ -128,7 +129,11 @@ export function searchProject(
       add(
         s.id + field,
         category,
-        s.chapter + ' · ' + s.title,
+        isStandalone(p)
+          ? usesScenes(p)
+            ? s.title
+            : p.title
+          : s.chapter + ' · ' + s.title,
         s[field],
         field,
         { sceneId: s.id },

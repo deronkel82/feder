@@ -12,6 +12,7 @@ export type StructureAction =
     }
   | { type: 'rename'; chapter: string; name: string; meta?: ChapterMeta }
   | { type: 'collapse'; chapter: string; target: string }
+  | { type: 'renameScene'; sceneId: string; name: string }
   | { type: 'deleteScene'; sceneId: string }
   | { type: 'deleteChapter'; chapter: string }
   | { type: 'newChapter'; chapter: string; meta?: ChapterMeta };
@@ -38,11 +39,17 @@ export function changeStructure(
   action: StructureAction,
 ): Library {
   const project = library.projects.find((p) => p.id === library.active)!;
-  if (isStandalone(project))
-    throw Error('Kurzgeschichten verwenden einen zusammenhängenden Text.');
+  if (
+    isStandalone(project) &&
+    (!usesScenes(project) ||
+      !['renameScene', 'deleteScene'].includes(action.type))
+  )
+    throw Error('Dieses Projekt verwendet keine Kapitel.');
   if (
     !usesScenes(project) &&
-    ['move', 'promote', 'collapse', 'deleteScene'].includes(action.type)
+    ['move', 'promote', 'collapse', 'deleteScene', 'renameScene'].includes(
+      action.type,
+    )
   )
     throw Error('Die Szenenmethodik ist für dieses Projekt abgeschaltet.');
   let scenes = orderedScenes(project);
@@ -118,6 +125,13 @@ export function changeStructure(
       scenes.filter((s) => s.chapter !== action.chapter),
       merged,
     );
+  } else if (action.type === 'renameScene') {
+    if (!action.name.trim()) throw Error('Bitte einen Szenentitel eingeben.');
+    if (!scenes.some((s) => s.id === action.sceneId))
+      throw Error('Szene nicht gefunden.');
+    scenes = scenes.map((s) =>
+      s.id === action.sceneId ? { ...s, title: action.name.trim() } : s,
+    );
   } else if (action.type === 'deleteScene')
     scenes = scenes.filter((s) => s.id !== action.sceneId);
   else if (action.type === 'deleteChapter')
@@ -135,7 +149,9 @@ export function changeStructure(
         : '';
     if (name) chapterMeta.push({ ...action.meta, name: name.trim() });
   }
-  if (!scenes.length) scenes = [newScene()];
+  if (!scenes.length)
+    scenes = [newScene(isStandalone(project) ? 'Manuskript' : undefined)];
+  if (isStandalone(project)) chapterMeta = [];
   chapterMeta = chapterMeta
     .filter((c) => scenes.some((s) => s.chapter === c.name))
     .map((c) => ({

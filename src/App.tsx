@@ -19,6 +19,7 @@ import {
   usesScenes,
   sceneCounts,
 } from './core/project-format';
+import { ManuscriptCounter } from './modules/manuscript-counter';
 import { WritingProgress } from './modules/writing-progress';
 import { ManuscriptTree } from './modules/manuscript-tree';
 import { chapterLabel, orderedScenes } from './core/chapters';
@@ -420,15 +421,17 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             <div className="sidebar-divider" />
             <div className="section-label">
               <span>MANUSKRIPT</span>
-              {!isStandalone(p) && (
+              {(!isStandalone(p) || usesScenes(p)) && (
                 <div className="manuscript-add">
-                  <button
-                    aria-label="Kapitel hinzufügen"
-                    title="Kapitel hinzufügen"
-                    onClick={() => setStructure({ kind: 'new', id: '' })}
-                  >
-                    <BookOpen size={16} />
-                  </button>
+                  {!isStandalone(p) && (
+                    <button
+                      aria-label="Kapitel hinzufügen"
+                      title="Kapitel hinzufügen"
+                      onClick={() => setStructure({ kind: 'new', id: '' })}
+                    >
+                      <BookOpen size={16} />
+                    </button>
+                  )}
                   {usesScenes(p) && (
                     <button
                       aria-label="Szene hinzufügen"
@@ -766,14 +769,9 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                   />
                   <div className="end-mark">◇</div>
                 </article>
-                {!isOther(p) && (
-                  <footer className="editor-footer">
-                    <span>
-                      <span className="live-dot" /> Raum für deine Geschichte.
-                    </span>
-                    <span>{s.text.length.toLocaleString('de')} Zeichen</span>
-                  </footer>
-                )}
+                <footer className="editor-footer">
+                  <ManuscriptCounter project={p} scene={s} />
+                </footer>
               </div>
             ) : view === 'timeline' ? (
               <TimelineView
@@ -883,12 +881,12 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                     <ArrowLeft size={17} />
                   </button>
                   <span className="edition">
-                    {isStandalone(p)
-                      ? 'TEXT'
-                      : usesScenes(p)
-                        ? 'SZENE'
+                    {usesScenes(p)
+                      ? 'SZENE'
+                      : isStandalone(p)
+                        ? 'TEXT'
                         : 'KAPITEL'}{' '}
-                    {!isStandalone(p) &&
+                    {(!isStandalone(p) || usesScenes(p)) &&
                       String(p.scenes.indexOf(s) + 1).padStart(2, '0')}
                   </span>
                 </div>
@@ -935,6 +933,16 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
                           Kapitel verwalten
                         </button>
                       </div>
+                    )}
+                    {isStandalone(p) && usesScenes(p) && (
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          setStructure({ kind: 'scene', id: s.id })
+                        }
+                      >
+                        Szene verwalten
+                      </button>
                     )}
                     <label className="field-label">
                       WAS PASSIERT?
@@ -1153,10 +1161,10 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
         setOpen={setCommentsDialog}
         scene={s}
         title={
-          isStandalone(p)
-            ? p.title
-            : usesScenes(p)
-              ? s.title
+          usesScenes(p)
+            ? s.title
+            : isStandalone(p)
+              ? p.title
               : chapterLabel(p, s.chapter)
         }
         selection={selection}

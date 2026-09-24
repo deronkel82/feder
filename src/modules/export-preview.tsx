@@ -1,5 +1,3 @@
-import { chapterGroups } from '../core/chapters';
-import { isStandalone, usesScenes } from '../core/project-format';
 import { BookDesignFields } from './book-design-fields';
 import { bookDesignDefaults } from '../core/book-design';
 import { useState, useMemo, useRef } from 'react';
@@ -11,7 +9,12 @@ import {
 } from '@/components/ui/dialog';
 import { uid, type Project } from '../core/model';
 import { exportDefaults, type ExportOptions } from '../core/workbench';
-import { exportDocument, exportEpub, printBook } from './publishing';
+import {
+  exportDocument,
+  exportEpub,
+  printBook,
+  exportMarkdown,
+} from './publishing';
 import { download, safeName } from '../core/storage';
 const builtin = [
   { id: 'reader', name: 'Testleser', options: exportDefaults },
@@ -74,28 +77,7 @@ export function ExportPreview({
     () => (open ? exportDocument(project, options) : ''),
     [project, options, open],
   );
-  const manuscript = () =>
-    `# ${project.title}\n\n${project.author ? project.author + '\n\n' : ''}` +
-    (isStandalone(project)
-      ? project.scenes[0].text
-      : chapterGroups(project)
-          .map(
-            (g) =>
-              (g.part ? '## ' + g.part + '\n\n' : '') +
-              g.chapters
-                .map(
-                  (c) =>
-                    `### ${c.label}\n\n` +
-                    c.scenes
-                      .map(
-                        (s) =>
-                          `${usesScenes(project) ? '#### ' + s.title + '\n\n' : ''}${s.text}`,
-                      )
-                      .join('\n\n'),
-                )
-                .join('\n\n'),
-          )
-          .join('\n\n'));
+  const manuscript = () => exportMarkdown(project);
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>

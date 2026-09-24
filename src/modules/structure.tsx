@@ -1,4 +1,4 @@
-import { usesScenes } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { chapterDetails } from '../core/chapters';
 import { ChapterFields } from './chapter-fields';
 import { useState } from 'react';
@@ -30,12 +30,20 @@ export function StructureDialog({
   const chapter = selection.kind === 'chapter' ? selection.id : scene.chapter;
   const [action, setAction] = useState(
     selection.kind === 'scene'
-      ? 'move'
+      ? isStandalone(project)
+        ? 'renameScene'
+        : 'move'
       : selection.kind === 'new'
         ? 'newChapter'
         : 'rename',
   );
-  const [name, setName] = useState(selection.kind === 'chapter' ? chapter : '');
+  const [name, setName] = useState(
+    selection.kind === 'chapter'
+      ? chapter
+      : selection.kind === 'scene'
+        ? scene.title
+        : '',
+  );
   const [meta, setMeta] = useState(() =>
     selection.kind === 'chapter'
       ? chapterDetails(project, chapter)
@@ -86,6 +94,8 @@ export function StructureDialog({
                   chapter: action === 'move' ? target : name,
                   meta: action === 'promote' ? meta : undefined,
                 };
+              else if (action === 'renameScene')
+                a = { type: 'renameScene', sceneId: scene.id, name };
               else if (action === 'rename')
                 a = { type: 'rename', chapter, name, meta };
               else if (action === 'collapse')
@@ -115,10 +125,17 @@ export function StructureDialog({
             >
               {selection.kind === 'scene' ? (
                 <>
-                  <option value="move">In anderes Kapitel verschieben</option>
-                  <option value="promote">
-                    Aus Szene neues Kapitel machen
-                  </option>
+                  <option value="renameScene">Szene umbenennen</option>
+                  {!isStandalone(project) && (
+                    <>
+                      <option value="move">
+                        In anderes Kapitel verschieben
+                      </option>
+                      <option value="promote">
+                        Aus Szene neues Kapitel machen
+                      </option>
+                    </>
+                  )}
                   <option value="deleteScene">Szene löschen</option>
                 </>
               ) : selection.kind === 'new' ? (
@@ -142,16 +159,21 @@ export function StructureDialog({
               )}
             </select>
           </label>
-          {(action === 'rename' ||
+          {(action === 'renameScene' ||
+            action === 'rename' ||
             action === 'promote' ||
             action === 'newChapter') && (
             <label className="field-label">
-              KAPITELNAME
+              {action === 'renameScene' ? 'SZENENTITEL' : 'KAPITELNAME'}
               <input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Name des Kapitels"
+                placeholder={
+                  action === 'renameScene'
+                    ? 'Name der Szene'
+                    : 'Name des Kapitels'
+                }
               />
             </label>
           )}

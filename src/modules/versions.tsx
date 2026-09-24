@@ -1,4 +1,4 @@
-import { isStandalone } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { DiffView } from './text-review';
 import { useState } from 'react';
 import {
@@ -132,7 +132,9 @@ export function Versions({
                 aria-pressed={activeScene === s.id}
               >
                 {isStandalone(project)
-                  ? project.title
+                  ? usesScenes(project)
+                    ? s.title
+                    : project.title
                   : `${s.chapter} · ${s.title}`}
               </button>
             ))}

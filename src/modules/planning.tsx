@@ -342,7 +342,9 @@ export function TimelineView({
               </small>
               <h2>
                 {isStandalone(project)
-                  ? project.title
+                  ? usesScenes(project)
+                    ? s.title
+                    : project.title
                   : usesScenes(project)
                     ? s.title
                     : chapterLabel(project, s.chapter)}
@@ -397,7 +399,9 @@ function IdeaTransfer({
       <p className="muted small">
         {usesScenes(project)
           ? 'Die Übernahme erstellt eine geplante Szene mit leerem Manuskripttext.'
-          : 'Die Übernahme ergänzt die Zusammenfassung des gewählten Texts oder legt ein neues Kapitel an. Bestehender Manuskripttext bleibt erhalten.'}{' '}
+          : isStandalone(project)
+            ? 'Die Übernahme ergänzt die Zusammenfassung deines Texts. Bestehender Manuskripttext bleibt erhalten.'
+            : 'Die Übernahme ergänzt die Zusammenfassung des gewählten Texts oder legt ein neues Kapitel an. Bestehender Manuskripttext bleibt erhalten.'}{' '}
         Kurzbeschreibung und Notizen werden zur Planung. Spätere Änderungen
         werden nicht automatisch synchronisiert.
       </p>
