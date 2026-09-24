@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.14.0",
+    "date": "2026-09-24",
+    "title": "Inkrementeller und robuster Drive-Abgleich",
+    "changes": [
+      "Nach der ersten Umstellung werden nur geänderte Datenblöcke übertragen. Unveränderte Texte, Cover und gespeicherte Fassungen werden wiederverwendet.",
+      "Uploads werden bei Verbindungsabbrüchen am bestätigten Stand fortgesetzt. Übertragungen erhalten bis zu fünf Minuten pro Anfrage und begrenzte Wiederholungen.",
+      "Fortschrittsmeldungen zeigen Laden, Hochladen und den Abschluss des Abgleichs.",
+      "Bestehende Drive-Bibliotheken bleiben lesbar. Für das neue Syncformat Feder auf allen Geräten auf mindestens 0.14 aktualisieren.",
+      "Ersetzte Standverzeichnisse werden bereinigt; Datenblöcke bleiben zur sicheren Wiederverwendung in Drive erhalten. Details in den Datenschutzhinweisen."
+    ]
+  },
+  {
     "version": "0.13.0",
     "date": "2026-09-20",
     "title": "Mehr Schreibfläche & klare Exportwege",

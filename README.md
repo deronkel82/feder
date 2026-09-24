@@ -203,3 +203,16 @@ Ab 0.12.0 lassen sich unter „Exportvorschau & Vorlagen“ die vier A4-Seitenr�
 ### Schreibfläche und Exportzugang
 
 Ab 0.13.0 öffnet der eigene Drucker-Button „Export & Druck“ in der oberen Werkzeugleiste alle Exportoptionen sowie Markdown, HTML, EPUB und Druck/PDF. Sicherung und Import bleiben in der Projektverwaltung. Der Fokusmodus nutzt die volle verfügbare Breite mit schmalem Sicherheitsabstand zum Bildschirmrand. Auf dem Schmutztitel bilden Reihe, Buchtitel und Band einen Titelblock: Die Reihe steht vor oder nach dem Buchtitel, der Autor unabhängig davon vor oder nach dem ganzen Block.
+
+
+## Inkrementeller Google-Drive-Sync (0.14.0)
+
+Feder speichert die Bibliothek in unveränderlichen, SHA-256-geprüften JSON-Datenblöcken mit einem kleinen Standverzeichnis. Nach der ersten Übertragung werden nur neue oder geänderte Blöcke hochgeladen; bestehende Blöcke werden auch für historische Fassungen wiederverwendet. Ein lokaler, auf 64 MB begrenzter und jederzeit verzichtbarer Cache spart wiederholte Downloads. Dies ist ein blockweiser Abgleich, keine gemeinsame Live-Bearbeitung und kein zeichenweiser Patch. Die vollständige Bibliothek bleibt auf 100 MB begrenzt.
+
+Bestehende vollständige Syncstände (Protokoll 1) können gelesen werden. Der nächste erfolgreiche manuelle oder automatische Abgleich veröffentlicht das neue Format (Protokoll 2), auch wenn sich die Texte nicht geändert haben. **Vorher Feder auf allen Geräten auf mindestens 0.14 aktualisieren.** Ältere Versionen halten bei dem unbekannten Format mit einem Updatehinweis an. Ein laufender älterer Upload bleibt als paralleler Stand erhalten und wird beim nächsten neuen Abgleich berücksichtigt. Vor der Umstellung empfiehlt sich eine JSON-Sicherung.
+
+Neue Standverzeichnisse werden erst veröffentlicht, wenn alle benötigten Blöcke bestätigt sind. Uploads verwenden 256-KiB-Teilstücke, bis zu fünf Minuten pro Anfrage und bis zu drei Wiederaufnahmeversuche. Nach Abbruch wird der Google-Uploadstatus abgefragt; nur noch fehlende Bytes werden gesendet. Nach einem Neustart werden bereits vollständig hochgeladene Blöcke wiederverwendet, teilweise übertragene einzelne Blöcke beginnen neu. Downloads werden bei vorübergehenden Fehlern bis zu zweimal wiederholt. Anmeldung und permanente Berechtigungsfehler werden nicht endlos wiederholt. Feder während des Abgleichs geöffnet lassen.
+
+Alte Standverzeichnisse werden wie bisher nach erfolgreicher lokaler Sicherung bereinigt. **Datenblöcke werden vorerst nicht automatisch gelöscht**, da sie auch von parallelen oder noch nicht veröffentlichten Uploads benötigt werden können. Alte Texte können daher weiterhin in nicht referenzierten Blöcken liegen und Speicher belegen. Vollständiges Entfernen erfolgt über das Löschen der ausgeblendeten Feder-App-Daten in Google Drive; siehe Datenschutzhinweise. Diese Einschränkung betrifft die physische Bereinigung, nicht die Übertragung von Projektlöschungen im aktiven Bestand.
+
+Tests: `node --experimental-strip-types --test tests/sync*.test.ts`. Sie prüfen unter anderem die alte/neue Formatübernahme, inkrementelle Übertragungsgröße, Unicode, Prüfsummen, parallele Geräte, fehlgeschlagene Uploads, unterbrochene Downloads und verlorene Uploadbestätigungen. Ein echter Google-/Safari-Abgleich muss zusätzlich mit Testdaten geprüft werden.

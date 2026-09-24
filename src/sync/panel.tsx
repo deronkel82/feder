@@ -121,6 +121,13 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
         geschlossener Homescreen-App läuft kein Hintergrund-Sync.
       </p>
       <p className="muted small">
+        Ab Feder 0.14 werden nur neue oder geänderte Datenblöcke übertragen. Die
+        erste Umstellung benötigt einen vollständigen Upload. Bitte Feder auf
+        allen Geräten aktualisieren; ältere Versionen können das neue Syncformat
+        nicht lesen. Bei einer Unterbrechung bleiben bestätigte Blöcke für den
+        nächsten Versuch erhalten.
+      </p>
+      <p className="muted small">
         Bei gleichzeitigen Änderungen desselben Projekts entstehen
         Konfliktkopien statt stiller Überschreibungen. Löschungen werden beim
         nächsten Abgleich übertragen. Schrift, Farben und andere

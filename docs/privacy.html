@@ -6,7 +6,7 @@
 <style>body{font:18px/1.65 system-ui,sans-serif;max-width:760px;margin:auto;padding:32px 20px;color:#183c40;background:#f7f6f0}h1,h2{line-height:1.2}a{color:#145d66}li{margin-block:10px}@media(prefers-color-scheme:dark){body{background:#15272c;color:#e0eaeb}a{color:#9fcfd0}}</style>
 <a href="./">← Zurück zu Feder</a>
 <h1>Deine Daten in Feder</h1>
-<p>Stand: 11. September 2026. Feder ist eine quelloffene Schreib-App. Standardmäßig speichert sie deine Bibliothek lokal im Browser bzw. in der installierten Web-App.</p>
+<p>Stand: 24. September 2026. Feder ist eine quelloffene Schreib-App. Standardmäßig speichert sie deine Bibliothek lokal im Browser bzw. in der installierten Web-App.</p>
 <h2>Optionale Google-Drive-Synchronisierung</h2>
 <p>Erst wenn du dein Google-Konto verbindest und die Synchronisierung startest, überträgt Feder deine Bibliothek direkt an Google Drive. Dazu gehören Projekte, Texte, Cover, Versionen, Kommentare, Figuren, Orte, Ideen, Vorlagen, der Standard-Autor und der Papierkorb. Die Daten landen im privaten Anwendungsbereich deines eigenen Google-Kontos. Andere Feder-Nutzer und die Betreiber dieser Website erhalten dadurch keinen Zugriff auf deine Bibliothek.</p>
 <p>Feder fordert ausschließlich die Berechtigung <code>drive.appdata</code> an. Damit kann die App ihre eigenen Anwendungsdaten lesen, schreiben und entfernen. Deine übrigen Drive-Dateien sind damit nicht zugänglich. Der Anwendungsbereich erscheint nicht als gewöhnlicher Ordner in Google Drive.</p>
@@ -18,7 +18,7 @@
 <ul>
 <li>„Verbindung trennen“ beendet die Verbindung auf dem aktuellen Gerät. Lokale Daten und die Drive-Bibliothek bleiben erhalten.</li>
 <li>Du kannst Feder den Zugriff jederzeit in den Verbindungen deines Google-Kontos entziehen. Die gespeicherten App-Daten kannst du zusätzlich in Google Drive unter Einstellungen → Apps verwalten → Feder → Optionen → ausgeblendete App-Daten löschen entfernen.</li>
-<li>Endgültig gelöschte Projekte werden beim nächsten erfolgreichen Abgleich auch aus dem aktiven Drive-Stand entfernt. Ersetzte Syncstände werden anschließend bereinigt. Falls das fehlschlägt, zeigt Feder einen Hinweis und versucht es beim nächsten Abgleich erneut. Noch nicht synchronisierte Geräte und selbst exportierte Dateien behalten ihren bisherigen Stand.</li>
+<li>Endgültig gelöschte Projekte werden beim nächsten erfolgreichen Abgleich auch aus dem aktiven Drive-Stand entfernt. Ersetzte Standverzeichnisse werden anschließend bereinigt. Ab Version 0.14 werden Datenblöcke wiederverwendet. Nicht mehr referenzierte Blöcke werden vorerst nicht automatisch gelöscht, damit parallele oder unterbrochene Uploads keine Daten verlieren. Sie können deshalb auch frühere Texte enthalten und Drive-Speicher belegen. Zum vollständigen Entfernen der Cloud-Inhalte lösche die ausgeblendeten App-Daten wie oben beschrieben. Ein optionaler lokaler Sync-Cache (bis zu 64 MB) kann ebenfalls frühere Textblöcke enthalten; er wird mit den Website-Daten entfernt. Sichere vorher alle benötigten lokalen Projekte. Falls das fehlschlägt, zeigt Feder einen Hinweis und versucht es beim nächsten Abgleich erneut. Noch nicht synchronisierte Geräte und selbst exportierte Dateien behalten ihren bisherigen Stand.</li>
 <li>Vorlagen und gemeinsame Romanwelten sind eigenständige Daten. Das Löschen eines Projekts entfernt sie nicht automatisch. Eine lokale Sicherung vor dem Übernehmen geänderter Daten bleibt unter „Projekte &amp; Export“ verfügbar.</li>
 </ul>
 <h2>Fragen und Quellcode</h2>
