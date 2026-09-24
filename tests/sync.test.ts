@@ -15,7 +15,7 @@ void test('damaged or unknown remote data aborts before upload or deletion', asy
         files: [
           {
             id: 'bad',
-            description: JSON.stringify({ protocol: 2, parents: [] }),
+            description: JSON.stringify({ protocol: 3, parents: [] }),
           },
         ],
       });
@@ -153,8 +153,8 @@ void test('immutable uploads leave parallel writes intact and reject foreign upl
   });
   const drive = new Drive('test-token');
   const [a, b] = await Promise.all([
-    drive.create(seed(), ['old']),
-    drive.create(seed(), ['old']),
+    drive.upload(JSON.stringify(seed()), { description: 'test' }, 'Test'),
+    drive.upload(JSON.stringify(seed()), { description: 'test' }, 'Test'),
   ]);
   assert.notEqual(a, b);
   assert.equal(

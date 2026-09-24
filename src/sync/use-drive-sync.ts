@@ -137,7 +137,7 @@ export function useDriveSync(
       setMessage('Bibliotheken werden abgeglichen …');
       try {
         const local = latest.current;
-        const drive = new Drive(auth.token);
+        const drive = new Drive(auth.token, setMessage);
         const raw = (await readSyncCheckpoint(auth.key)) as
           | { base?: unknown; date?: string }
           | undefined;
@@ -195,7 +195,10 @@ export function useDriveSync(
         };
         unchanged();
         const uploaded =
-          !remote || heads.length !== 1 || !syncEqual(result, remote)
+          !remote ||
+          heads.length !== 1 ||
+          heads.some((h) => h.protocol !== 2) ||
+          !syncEqual(result, remote)
             ? await drive.create(
                 result,
                 heads.map((h) => h.id),
@@ -203,6 +206,7 @@ export function useDriveSync(
             : undefined;
         unchanged();
         const date = new Date().toISOString();
+        setMessage('Abgeglichenen Stand lokal sichern …');
         await save(result, {
           key: auth.key,
           checkpoint: { base: result, date },
@@ -217,6 +221,7 @@ export function useDriveSync(
         setInitial(null);
         setLastSync(date);
         setSyncedLibrary(result);
+        setMessage('Sync abschließen …');
         let cleanupFailed = false;
         // Only delete records observed before our immutable commit. A simultaneous writer's new record is never removed.
         {
