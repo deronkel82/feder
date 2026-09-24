@@ -289,8 +289,8 @@ function ChapterOverview({
   return (
     <section>
       <p className="muted">
-        Kapitel öffnen, um direkt weiterzuschreiben. Die Zusammenfassungen
-        zeigen deine Planung.
+        Textabschnitte öffnen, um direkt weiterzuschreiben. Die
+        Zusammenfassungen zeigen deine Planung.
       </p>
       {chapterGroups(project).map((g) => (
         <section key={g.key}>

@@ -161,7 +161,7 @@ export function EntityPanel({
           <strong>{e.name}</strong>
           <small>
             {e.kind} · {e.sceneIds.length}{' '}
-            {isShort(project)
+            {isShort(project) && !usesScenes(project)
               ? 'Text'
               : usesScenes(project)
                 ? 'Szenen'

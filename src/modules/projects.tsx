@@ -328,10 +328,14 @@ export function ProjectDialog({
                 setDraft({
                   ...draft,
                   format,
-                  sceneMode:
-                    format === 'short' || format === 'other'
-                      ? false
-                      : sceneMode,
+                  sceneMode: format === 'other' ? false : sceneMode,
+                  scenes:
+                    format === 'short'
+                      ? draft.scenes.map((s) => ({
+                          ...s,
+                          chapter: 'Manuskript',
+                        }))
+                      : draft.scenes,
                   target:
                     format !== projectFormat(draft)
                       ? defaultTarget(format)

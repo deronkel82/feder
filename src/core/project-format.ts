@@ -14,7 +14,7 @@ export const isShort = (p: Project) => projectFormat(p) === 'short';
 export const isOther = (p: Project) => projectFormat(p) === 'other';
 export const isStandalone = (p: Project) => isShort(p) || isOther(p);
 export const usesScenes = (p: Project) =>
-  !isStandalone(p) && p.sceneMode !== false;
+  !isOther(p) && (isShort(p) ? p.sceneMode === true : p.sceneMode !== false);
 export const defaultTarget = (format: ProjectFormat) =>
   ({ novel: 50000, novella: 20000, short: 2500, other: 1 })[format];
 const countCache = new WeakMap<
@@ -93,7 +93,7 @@ export function configureProject(
   const p = l.projects.find((p) => p.id === l.active)!;
   const all = orderedScenes(p);
   const groups =
-    format === 'short' || format === 'other'
+    format === 'other' || (format === 'short' && !sceneMode)
       ? [all]
       : sceneMode
         ? all.map((s) => [s])
@@ -103,7 +103,8 @@ export function configureProject(
   const idMap = new Map<string, string>();
   const scenes = groups.map((g) => {
     for (const s of g) idMap.set(s.id, g[0].id);
-    return merged(g);
+    const scene = merged(g);
+    return format === 'short' ? { ...scene, chapter: 'Manuskript' } : scene;
   });
   const next = withSnapshot(
     l,
@@ -117,8 +118,7 @@ export function configureProject(
         ? {
             ...x,
             format,
-            sceneMode:
-              format === 'short' || format === 'other' ? false : sceneMode,
+            sceneMode: format === 'other' ? false : sceneMode,
             scenes,
             chapterMeta:
               format === 'short' || format === 'other' ? [] : x.chapterMeta,

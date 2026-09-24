@@ -335,9 +335,23 @@ export function validateLibrary(data: unknown): Library {
       }
       sids.add(s.id);
     }
-    if ((p.format === 'short' || p.format === 'other') && p.scenes.length !== 1)
+    if (
+      (p.format === 'other' ||
+        (p.format === 'short' && p.sceneMode !== true)) &&
+      p.scenes.length !== 1
+    )
       throw Error(
         'Kurzgeschichten müssen einen zusammenhängenden Text enthalten.',
+      );
+    if (
+      p.format === 'short' &&
+      p.sceneMode === true &&
+      (new Set(p.scenes.map((s) => s.chapter)).size !== 1 ||
+        (p.chapterMeta?.length || 0) > 0 ||
+        p.series.enabled)
+    )
+      throw Error(
+        'Kurzgeschichten mit Szenen verwenden keine Kapitel oder Buchreihen.',
       );
     if (
       p.sceneMode === false &&

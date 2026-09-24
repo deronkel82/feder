@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.15.0",
+    "date": "2026-09-24",
+    "title": "Wort- und Zeichenzähler & Szenen für Kurzgeschichten",
+    "changes": [
+      "Wörter und Zeichen stehen für alle Projektarten direkt unter dem Schreibfeld – auch für Sonstiges und im Fokusmodus. Bei mehreren Abschnitten werden Gesamtumfang und aktueller Abschnitt getrennt angezeigt.",
+      "Kurzgeschichten können optional Szenen verwenden, weiterhin ohne Kapitel, Akte oder Buchreihen. Einschalten unter Projektart / Textstruktur oder direkt beim Anlegen.",
+      "Szenen lassen sich anlegen, umbenennen, ordnen und löschen. Beim Abschalten werden ihre Texte nach einer Versionssicherung zusammengefügt.",
+      "Markdown, HTML/Druck und EPUB geben alle Szenen in ihrer Reihenfolge aus. Speicherung, Versionsstände und Google-Abgleich unterstützen die neue Kurzgeschichtenstruktur. Für den Austausch solcher Projekte alle Geräte auf 0.15 oder neuer aktualisieren."
+    ]
+  },
+  {
     "version": "0.14.0",
     "date": "2026-09-24",
     "title": "Inkrementeller und robuster Drive-Abgleich",

@@ -44,6 +44,20 @@ export function chapterLabel(p: Project, name: string) {
     : name;
 }
 export function chapterGroups(p: Project) {
+  if (p.format === 'short' || p.format === 'other')
+    return [
+      {
+        key: 'manuscript',
+        part: '',
+        chapters: [
+          {
+            name: p.scenes[0].chapter,
+            label: p.title || 'Manuskript',
+            scenes: p.scenes,
+          },
+        ],
+      },
+    ];
   const names = [...new Set(p.scenes.map((s) => s.chapter))];
   const toChapter = (name: string) => ({
     name,

@@ -1,4 +1,4 @@
-import { isStandalone } from '../core/project-format';
+import { isStandalone, usesScenes } from '../core/project-format';
 import { useState, useMemo } from 'react';
 import {
   Dialog,
@@ -186,7 +186,10 @@ export function SearchReplace({
                     />
                     <strong>
                       {isStandalone(project)
-                        ? project.title
+                        ? usesScenes(project)
+                          ? project.scenes.find((s) => s.id === m.sceneId)
+                              ?.title
+                          : project.title
                         : project.scenes
                             .filter((s) => s.id === m.sceneId)
                             .map((s) => `${s.chapter} · ${s.title}`)

@@ -1,8 +1,9 @@
 import type { Library, Project } from './model.ts';
 import { chapterDetails, chapterGroups } from './chapters.ts';
 import { withSnapshot } from './history.ts';
-import { usesScenes } from './project-format.ts';
+import { isStandalone, usesScenes } from './project-format.ts';
 export function boardChapters(p: Project) {
+  if (isStandalone(p)) return [p.scenes[0].chapter];
   const visible = chapterGroups(p).flatMap((g) =>
     g.chapters.map((c) => c.name),
   );
@@ -59,7 +60,9 @@ export function placeScene(
         ? {
             ...x,
             scenes,
-            chapterMeta: names.map((name) => chapterDetails(p, name)),
+            chapterMeta: isStandalone(p)
+              ? []
+              : names.map((name) => chapterDetails(p, name)),
             updated: new Date().toISOString(),
           }
         : x,

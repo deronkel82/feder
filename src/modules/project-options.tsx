@@ -23,7 +23,12 @@ export function FormatFields({
         PROJEKTART
         <select
           value={format}
-          onChange={(e) => change(e.target.value as ProjectFormat, sceneMode)}
+          onChange={(e) =>
+            change(
+              e.target.value as ProjectFormat,
+              e.target.value === 'short' ? false : sceneMode,
+            )
+          }
         >
           {Object.entries(formatNames).map(([key, name]) => (
             <option key={key} value={key}>
@@ -42,6 +47,16 @@ export function FormatFields({
           Ein Text pro Kapitel (ohne separate Szenen)
         </label>
       )}
+      {format === 'short' && (
+        <label className="format-check">
+          <input
+            type="checkbox"
+            checked={sceneMode}
+            onChange={(e) => change(format, e.target.checked)}
+          />
+          Szenen verwenden (ohne Kapitel)
+        </label>
+      )}
       {format === 'other' && (
         <p className="muted small">
           Nur eine Überschrift und ein Text. Ohne Kapitel, Planung oder
@@ -50,8 +65,9 @@ export function FormatFields({
       )}
       {format === 'short' && (
         <p className="muted small">
-          Ein zusammenhängender Text ohne Kapitel, Reihe oder Bandnummer. Wörter
-          und Zeichen können als Wettbewerbsgrenzen eingestellt werden.
+          Ein zusammenhängender Text oder mehrere Szenen – ohne Kapitel, Reihe
+          oder Bandnummer. Wörter und Zeichen können als Wettbewerbsgrenzen
+          eingestellt werden.
         </p>
       )}
     </>
@@ -93,9 +109,7 @@ export function ProjectModeSettings({
         className="text-button"
         disabled={
           format === projectFormat(project) &&
-          (format === 'short' ||
-            format === 'other' ||
-            sceneMode === usesScenes(project))
+          (format === 'other' || sceneMode === usesScenes(project))
         }
       >
         Projektart / Textstruktur übernehmen

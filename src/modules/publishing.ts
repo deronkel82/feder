@@ -3,6 +3,7 @@ import { bookDesignDefaults } from '../core/book-design.ts';
 import { validCover } from '../core/cover-data.ts';
 import { isStandalone, usesScenes } from '../core/project-format.ts';
 import {
+  chapterGroups,
   chapterLabel,
   chapterDetails,
   orderedScenes,
@@ -51,7 +52,7 @@ export function paragraphs(s: string): string {
   return blocks.join('\n');
 }
 export function exportHeading(p: Project, s: Scene) {
-  if (isStandalone(p)) return p.title;
+  if (isStandalone(p)) return usesScenes(p) ? s.title : p.title;
   return [
     chapterDetails(p, s.chapter).part,
     chapterLabel(p, s.chapter),
@@ -129,6 +130,15 @@ function sections(
   let chapter = '';
   let part = '';
   orderedScenes(p).forEach((s, i) => {
+    if (isStandalone(p)) {
+      const heading = usesScenes(p) && o.sceneHeadings ? s.title : '';
+      add(
+        `scene-${i}`,
+        heading || (i === 0 ? p.title : `Szene ${i + 1}`),
+        `<section id="chapter-${i}" class="scene">${i === 0 ? `<h1>${escape(p.title)}</h1>` : ''}${heading ? `<h2>${escape(heading)}</h2>` : ''}${paragraphs(s.text)}</section>`,
+      );
+      return;
+    }
     const changed = s.chapter !== chapter;
     chapter = s.chapter;
     const c = chapterDetails(p, s.chapter);
@@ -165,6 +175,10 @@ function toc(p: Project, o: ExportOptions, epub: boolean) {
   let last = '';
   return `<h1>Inhaltsverzeichnis</h1><ol>${orderedScenes(p)
     .map((s, i) => {
+      if (isStandalone(p)) {
+        const title = usesScenes(p) ? s.title : p.title;
+        return `<li><a href="${epub ? `scene-${i}.xhtml` : ''}#chapter-${i}">${escape(title)}</a></li>`;
+      }
       if (s.chapter === last) return '';
       last = s.chapter;
       const label = outputChapter(p, s, o) || s.title || 'Anfang';
@@ -269,4 +283,36 @@ export function printBook(
     setTimeout(() => frame.remove(), 60000);
   };
   frame.srcdoc = exportDocument(p, o);
+}
+
+export function exportMarkdown(p: Project) {
+  const title = `# ${p.title}\n\n${p.author ? p.author + '\n\n' : ''}`;
+  if (isStandalone(p))
+    return (
+      title +
+      p.scenes
+        .map((s) => `${usesScenes(p) ? '## ' + s.title + '\n\n' : ''}${s.text}`)
+        .join('\n\n')
+    );
+  return (
+    title +
+    chapterGroups(p)
+      .map(
+        (g) =>
+          (g.part ? '## ' + g.part + '\n\n' : '') +
+          g.chapters
+            .map(
+              (c) =>
+                `### ${c.label}\n\n` +
+                c.scenes
+                  .map(
+                    (s) =>
+                      `${usesScenes(p) ? '#### ' + s.title + '\n\n' : ''}${s.text}`,
+                  )
+                  .join('\n\n'),
+            )
+            .join('\n\n'),
+      )
+      .join('\n\n')
+  );
 }

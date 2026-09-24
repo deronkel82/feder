@@ -3358,3 +3358,19 @@ select:focus-visible {
   min-width: 44px;
   min-height: 44px;
 }
+
+/* Counters stay readable for every project type, including narrow screens. */
+.editor-footer {
+  height: auto;
+  min-height: 39px;
+  padding-top: 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+.manuscript-counter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
