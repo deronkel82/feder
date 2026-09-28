@@ -83,7 +83,13 @@ export function CardsView({
     >
       <div className="card-top">
         <span className="card-symbol">
-          <Icon size={22} />
+          {c.kind === 'Figur' && c.character?.portrait ? (
+            // Locally compressed data URL.
+            // oxlint-disable-next-line next/no-img-element
+            <img src={c.character.portrait} alt="" />
+          ) : (
+            <Icon size={22} />
+          )}
         </span>
         <ArrowUpRight size={16} />
       </div>

@@ -839,6 +839,44 @@ small,
   color: var(--primary);
   display: grid;
   place-items: center;
+  overflow: hidden;
+}
+.card-symbol img,
+.shared-card-portrait {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.shared-card-portrait {
+  float: left;
+  margin-right: 10px;
+}
+.portrait-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.portrait-editor img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.portrait-editor .field-label {
+  flex: 1;
+  min-width: 180px;
+}
+.portrait-editor input {
+  width: 100%;
+}
+.portrait-editor small {
+  display: block;
+}
+.portrait-editor output[role='alert'] {
+  color: var(--destructive);
 }
 .story-card h2 {
   font:

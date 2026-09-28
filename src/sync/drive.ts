@@ -291,12 +291,53 @@ export class Drive {
       seen.add(page);
     } while (page);
   }
+  private async findBlocks(hashes: string[]) {
+    if (!hashes.length) return;
+    const q = new URLSearchParams({
+      spaces: 'appDataFolder',
+      q:
+        "trashed = false and appProperties has { key='federBlock' and value='2' } and (" +
+        hashes
+          .map(
+            (hash) =>
+              "appProperties has { key='hash' and value='" + hash + "' }",
+          )
+          .join(' or ') +
+        ')',
+      fields: 'nextPageToken,incompleteSearch,files(id,appProperties)',
+      pageSize: '1000',
+    });
+    const data = (await this.json(API + '/files?' + q)) as {
+      files?: { id: string; appProperties?: { hash?: string } }[];
+      nextPageToken?: string;
+      incompleteSearch?: boolean;
+    };
+    if (
+      data.incompleteSearch ||
+      data.nextPageToken ||
+      !Array.isArray(data.files)
+    )
+      throw Error('Drive-Dateiliste unvollständig.');
+    const wanted = new Set(hashes);
+    for (const file of data.files)
+      if (
+        typeof file.id === 'string' &&
+        typeof file.appProperties?.hash === 'string' &&
+        wanted.has(file.appProperties.hash)
+      )
+        this.known.set(file.appProperties.hash, file.id);
+  }
   async create(library: Library, parents: string[]): Promise<string> {
     this.progress('Geänderte Datenblöcke werden ermittelt …');
     const packed = await pack(library);
-    // Also reuse blocks from an earlier interrupted sync; no published head is
-    // needed for these immutable, completed files.
-    await this.discoverBlocks();
+    // The remote head has already supplied IDs for its reachable blocks.
+    // Probe only a few new hashes, including interrupted uploads. A cold
+    // first transfer still uses the paginated full listing.
+    const unknown = [...packed.blocks.keys()].filter(
+      (hash) => !this.known.has(hash),
+    );
+    if (unknown.length <= 16) await this.findBlocks(unknown);
+    else await this.discoverBlocks();
     const missing = [...packed.blocks].filter(
       ([hash]) => !this.known.has(hash),
     );
