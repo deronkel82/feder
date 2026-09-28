@@ -103,11 +103,17 @@ function server() {
     }
     const parsed = new URL(url);
     if (parsed.pathname.endsWith('/files')) {
-      const block = parsed.searchParams.get('q')!.includes('federBlock');
+      const query = parsed.searchParams.get('q')!;
+      const block = query.includes('federBlock');
+      const requestedHashes = [
+        ...query.matchAll(/key='hash' and value='([a-f0-9]{64})'/g),
+      ].map((match) => match[1]);
       return Response.json({
         files: [...files.values()].filter((f) =>
           block
-            ? f.appProperties?.federBlock === '2'
+            ? f.appProperties?.federBlock === '2' &&
+              (!requestedHashes.length ||
+                requestedHashes.includes(f.appProperties?.hash || ''))
             : f.appProperties?.federSync === '1',
         ),
       });
@@ -239,6 +245,30 @@ void test('completed blocks survive failed manifest publication and are reused o
   const id = await new Drive('test', () => {}, noWait).create(library, []);
   assert.equal(api.files.size, blockCount + 1, 'only the manifest was added');
   assert.equal(remoteHeads(await new Drive('test').list())[0].id, id);
+});
+
+void test('a small sync change probes hashes without listing the entire block history', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const library = seed();
+  const drive = new Drive('test', () => {}, noWait);
+  const head = await drive.create(library, []);
+  await drive.read({ id: head, parents: [], date: 'now', protocol: 2 });
+  const edited = structuredClone(library);
+  edited.projects[0].scenes[0].text += ' Ein Satz.';
+  const before = api.requests.length;
+  await drive.create(edited, [head]);
+  const searches = api.requests
+    .slice(before)
+    .filter(
+      (r) => r.method === 'GET' && new URL(r.url).pathname.endsWith('/files'),
+    );
+  assert.equal(searches.length, 1);
+  assert.ok(
+    searches.every((r) =>
+      new URL(r.url).searchParams.get('q')?.includes("key='hash'"),
+    ),
+  );
 });
 
 void test('persistent network aborts stop after bounded retries with a useful message', async (t) => {

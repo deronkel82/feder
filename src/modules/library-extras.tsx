@@ -358,6 +358,16 @@ export function SharedWorldPanel({
               )
               .map((c) => (
                 <button key={c.id} onClick={() => setEditing({ ...c })}>
+                  {c.kind === 'Figur' &&
+                    c.character?.portrait && (
+                      // Locally compressed data URL.
+                      // oxlint-disable-next-line next/no-img-element
+                      <img
+                        className="shared-card-portrait"
+                        src={c.character.portrait}
+                        alt=""
+                      />
+                    )}
                   <strong>{c.title}</strong>
                   <small>
                     {c.kind} · {c.subtitle}

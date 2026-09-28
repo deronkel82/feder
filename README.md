@@ -10,9 +10,10 @@ Eine unabhängige Open-Source-Schreib-App für Geschichten, Figuren und Ideen. I
 - Schreibfläche mit nativer Rechtschreibprüfung, Markdown-Markierungen für fett/kursiv, Fokusmodus, hell/dunkel.
 - Szenenstatus, Zusammenfassung, Perspektive, Datum, Notizen und Umordnen.
 - Ideenwand, Figuren, Orte, Recherchekarten und chronologischer Zeitstrahl.
+- Figurenprofile mit optionalem, komprimiertem Profilbild; lokale Projekte und gemeinsame Romanwelten.
 - Stilanalyse: Füllwörter, lange Sätze und Wiederholungen; Klick markiert die Textstelle.
 - **48.479 OpenThesaurus-Synonymgruppen lokal**, ohne API oder Übertragung von Texten. Markiertes Wort durch Synonym ersetzen.
-- Lokale IndexedDB-Speicherung, sichtbarer Speicherstatus, Schutz vor Überschreiben durch ein anderes Fenster.
+- Lokale IndexedDB-Speicherung geänderter Szenen und Versionen, sichtbarer Speicherstatus, Schutz vor Überschreiben durch ein anderes Fenster.
 - Benannte, nummerierte Versionen, Textvergleich und Wiederherstellung mit vorheriger Sicherung. Automatische Ausgangsstände bei Überarbeitung.
 - Lokale Personen- und Ortserkennung im Hintergrund: Vorschläge bestätigen, umklassifizieren oder verwerfen. Bekannte Figuren werden auch über eindeutige Vornamen gefunden.
 - Automatische Update-Prüfung und „Jetzt aktualisieren“ mit vorherigem Speichern und separater lokaler Sicherung.
@@ -204,7 +205,6 @@ Ab 0.12.0 lassen sich unter „Exportvorschau & Vorlagen“ die vier A4-Seitenr�
 
 Ab 0.13.0 öffnet der eigene Drucker-Button „Export & Druck“ in der oberen Werkzeugleiste alle Exportoptionen sowie Markdown, HTML, EPUB und Druck/PDF. Sicherung und Import bleiben in der Projektverwaltung. Der Fokusmodus nutzt die volle verfügbare Breite mit schmalem Sicherheitsabstand zum Bildschirmrand. Auf dem Schmutztitel bilden Reihe, Buchtitel und Band einen Titelblock: Die Reihe steht vor oder nach dem Buchtitel, der Autor unabhängig davon vor oder nach dem ganzen Block.
 
-
 ## Inkrementeller Google-Drive-Sync (0.14.0)
 
 Feder speichert die Bibliothek in unveränderlichen, SHA-256-geprüften JSON-Datenblöcken mit einem kleinen Standverzeichnis. Nach der ersten Übertragung werden nur neue oder geänderte Blöcke hochgeladen; bestehende Blöcke werden auch für historische Fassungen wiederverwendet. Ein lokaler, auf 64 MB begrenzter und jederzeit verzichtbarer Cache spart wiederholte Downloads. Dies ist ein blockweiser Abgleich, keine gemeinsame Live-Bearbeitung und kein zeichenweiser Patch. Die vollständige Bibliothek bleibt auf 100 MB begrenzt.
@@ -216,7 +216,6 @@ Neue Standverzeichnisse werden erst veröffentlicht, wenn alle benötigten Blöc
 Alte Standverzeichnisse werden wie bisher nach erfolgreicher lokaler Sicherung bereinigt. **Datenblöcke werden vorerst nicht automatisch gelöscht**, da sie auch von parallelen oder noch nicht veröffentlichten Uploads benötigt werden können. Alte Texte können daher weiterhin in nicht referenzierten Blöcken liegen und Speicher belegen. Vollständiges Entfernen erfolgt über das Löschen der ausgeblendeten Feder-App-Daten in Google Drive; siehe Datenschutzhinweise. Diese Einschränkung betrifft die physische Bereinigung, nicht die Übertragung von Projektlöschungen im aktiven Bestand.
 
 Tests: `node --experimental-strip-types --test tests/sync*.test.ts`. Sie prüfen unter anderem die alte/neue Formatübernahme, inkrementelle Übertragungsgröße, Unicode, Prüfsummen, parallele Geräte, fehlgeschlagene Uploads, unterbrochene Downloads und verlorene Uploadbestätigungen. Ein echter Google-/Safari-Abgleich muss zusätzlich mit Testdaten geprüft werden.
-
 
 ## Zähler und Kurzgeschichten-Szenen (0.15.0)
 

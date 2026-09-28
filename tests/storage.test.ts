@@ -98,3 +98,56 @@ void test('130,000-word novel survives saving and reloading without truncation',
   await save(changed);
   assert.deepEqual((await load()).library, changed);
 });
+void test('an immutable scene edit writes only its scene and the small index', async () => {
+  const { newProject, newScene } = await import('../src/core/model.ts');
+  const original = (await load()).library;
+  const second = newProject('Zweites Buch');
+  const initial = {
+    ...original,
+    projects: [
+      {
+        ...original.projects[0],
+        scenes: [original.projects[0].scenes[0], newScene()],
+      },
+      second,
+    ],
+    snapshots: [
+      { id: 'saved-version', date: 'now', project: structuredClone(second) },
+    ],
+  };
+  await save(initial);
+  const changed = {
+    ...initial,
+    projects: [
+      {
+        ...initial.projects[0],
+        scenes: [
+          {
+            ...initial.projects[0].scenes[0],
+            text: 'Nur diese Szene geändert',
+          },
+          initial.projects[0].scenes[1],
+        ],
+      },
+      second,
+    ],
+  };
+  // oxlint-disable-next-line typescript/unbound-method
+  const put = IDBObjectStore.prototype.put;
+  const keys: IDBValidKey[] = [];
+  IDBObjectStore.prototype.put = function (value, key) {
+    keys.push(key!);
+    return put.call(this, value, key);
+  };
+  try {
+    await save(changed);
+  } finally {
+    IDBObjectStore.prototype.put = put;
+  }
+  assert.deepEqual(keys, [
+    'project:' + changed.projects[0].id,
+    'scene:' + changed.projects[0].id + ':' + changed.projects[0].scenes[0].id,
+    'feder.library.v1',
+  ]);
+  assert.deepEqual((await load()).library, changed);
+});

@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.16.0",
+    "date": "2026-09-28",
+    "title": "Schneller lokal speichern & Profilbilder für Figuren",
+    "changes": [
+      "Beim lokalen Speichern werden geänderte Szenen, Figurenkarten und Versionsstände einzeln geschrieben. Unveränderte Bücher und alte Fassungen müssen beim Tippen nicht mehr mitgespeichert werden.",
+      "Bei kleinen Google-Drive-Änderungen fragt Feder nur die benötigten Datenblöcke ab, statt die gesamte gewachsene Blockliste zu laden. Unterbrochene Uploads können weiterverwendet werden.",
+      "Bisherige lokale Bibliotheken werden beim ersten Speichern in das platzsparendere Format übernommen. JSON-Sicherungen, Versionsstände und Google-Abgleich bleiben vollständig.",
+      "Figuren können ein eigenes Profilbild erhalten, sowohl in Projektkarten als auch in gemeinsamen Romanwelten. Bilder werden quadratisch zugeschnitten und klein gespeichert; sie sind Teil der Sicherung und Synchronisierung."
+    ]
+  },
+  {
     "version": "0.15.0",
     "date": "2026-09-24",
     "title": "Wort- und Zeichenzähler & Szenen für Kurzgeschichten",
