@@ -1552,6 +1552,22 @@ small,
   height: 100dvh;
   color: var(--primary);
 }
+.recovery-screen {
+  height: auto;
+  min-height: 100dvh;
+  padding: 32px 20px;
+  text-align: center;
+}
+.recovery-screen p {
+  max-width: 640px;
+  color: var(--foreground);
+}
+.recovery-screen button {
+  padding: 12px 18px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  cursor: pointer;
+}
 .scene-button,
 .module-nav button,
 .footer-button {

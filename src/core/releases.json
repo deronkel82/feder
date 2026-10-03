@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.16.1",
+    "date": "2026-10-03",
+    "title": "Sichere Wiederherstellung bei Speicherfehlern",
+    "changes": [
+      "Bei Ladefehlern erscheint eine Wiederherstellungsansicht statt des Demo-Projekts. Bearbeitung, Speichern und Synchronisierung bleiben gesperrt.",
+      "Fehlende Projektindizes, unvollständige Datenblöcke und Hinweise auf einen geleerten Speicher verhindern einen automatischen Neustart mit Demo-Daten.",
+      "Automatische lokale Wiederherstellungssicherungen halten zwei vorherige Stände vor: beim ersten Speichern nach dem Öffnen und danach höchstens alle fünf Minuten bei Änderungen.",
+      "Der Rohdatenexport rettet bei beschädigten Speicherständen alle verbliebenen Datenblöcke und Sicherungen. Fehlgeschlagene Schreibvorgänge werden vollständig zurückgerollt, bevor weitere Aufträge fortgesetzt werden."
+    ]
+  },
+  {
     "version": "0.16.0",
     "date": "2026-09-28",
     "title": "Schneller lokal speichern & Profilbilder für Figuren",
