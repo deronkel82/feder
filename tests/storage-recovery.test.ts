@@ -123,3 +123,69 @@ void test('restart saves retain a previous independent recovery generation', asy
   );
   assert.deepEqual((await storage.load()).library, next);
 });
+void test('explicit recovery of a damaged index preserves all original blocks and restores every project', async () => {
+  const storage = await fresh();
+  const original = (await storage.load()).library;
+  original.projects[0].scenes[0].text = 'Nur lokal vorhandener Text';
+  await storage.save(original);
+  await edit((store) => store.delete('feder.library.v1'));
+  assert.ok((await storage.load()).error);
+  const recovered = seed();
+  recovered.projects[0].title = 'Aus Drive gerettet';
+  recovered.projects[0].scenes[0].text = 'Vollständiger Drive-Text';
+  recovered.snapshots.push({
+    id: 'cloud-version',
+    date: 'now',
+    project: structuredClone(recovered.projects[0]),
+  });
+  await storage.restoreLibrary(recovered);
+  await assert.rejects(storage.save(seed()), /Wiederherstellung/);
+  assert.deepEqual((await storage.load()).library, recovered);
+  const archive = (await storage.recoveryBackups()).find((b) =>
+    b.key.startsWith('backup:recovery:'),
+  )!;
+  const raw = archive.library as { records: Record<string, { text?: string }> };
+  assert.equal(
+    raw.records[
+      'scene:' + original.active + ':' + original.projects[0].scenes[0].id
+    ].text,
+    'Nur lokal vorhandener Text',
+  );
+  const next = { ...recovered, active: recovered.active };
+  await storage.save(next);
+  assert.deepEqual((await storage.load()).library, next);
+});
+void test('failed local recovery rolls back index replacement and archive creation together', async () => {
+  const storage = await fresh();
+  const original = (await storage.load()).library;
+  await storage.save(original);
+  // oxlint-disable-next-line typescript/unbound-method
+  const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function (value, key) {
+    if (key === 'feder.library.v1')
+      throw new DOMException('Disk full', 'QuotaExceededError');
+    return put.call(this, value, key);
+  };
+  try {
+    await assert.rejects(
+      storage.restoreLibrary(seed()),
+      /Originaldaten bleiben unverändert/,
+    );
+  } finally {
+    IDBObjectStore.prototype.put = put;
+  }
+  assert.deepEqual((await storage.load()).library, original);
+  assert.equal(
+    (await storage.recoveryBackups()).filter((b) =>
+      b.key.startsWith('backup:recovery:'),
+    ).length,
+    0,
+  );
+});
+void test('invalid recovery library is rejected without touching existing data', async () => {
+  const storage = await fresh();
+  const original = (await storage.load()).library;
+  await storage.save(original);
+  assert.throws(() => storage.restoreLibrary({ version: 99 }), /Datenversion/);
+  assert.deepEqual((await storage.load()).library, original);
+});

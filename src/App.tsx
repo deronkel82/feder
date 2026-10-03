@@ -1,4 +1,5 @@
 import { BookTools } from './modules/book-tools';
+import { RecoveryTools } from './sync/recovery-panel';
 import { WhatsNew } from './modules/whats-new';
 import { readPosition, useWritingPosition } from './modules/writing-position';
 import { SyncStatus } from './sync/status';
@@ -132,7 +133,7 @@ export default function App() {
     void load().then(setInitial);
   }, []);
   return initial?.error ? (
-    <RecoveryScreen error={initial.error} />
+    <RecoveryScreen error={initial.error} library={initial.library} />
   ) : initial ? (
     <Workspace initial={initial} />
   ) : (
@@ -142,7 +143,14 @@ export default function App() {
     </div>
   );
 }
-function RecoveryScreen({ error }: { error: string }) {
+function RecoveryScreen({
+  error,
+  library,
+}: {
+  error: string;
+  library: LibraryData;
+}) {
+  const updates = useUpdates(library, error);
   const [message, setMessage] = useState('');
   const [backups, setBackups] = useState<
     Awaited<ReturnType<typeof recoveryBackups>>
@@ -203,6 +211,13 @@ function RecoveryScreen({ error }: { error: string }) {
         </button>
       ))}
       <button onClick={() => location.reload()}>Erneut öffnen</button>
+      <UpdateNotice updates={updates} />
+      <p>
+        Bei einem bereitstehenden Update und gesperrtem Speicher: zuerst die
+        Originaldaten herunterladen, dann alle Feder-Fenster und die
+        Homescreen-App schließen und erneut öffnen. Keine Browserdaten löschen.
+      </p>
+      <RecoveryTools allowRestore />
       {message && <output>{message}</output>}
     </main>
   );

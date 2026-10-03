@@ -331,6 +331,13 @@ export function save(
                 if (!c) return;
                 if (typeof c.key === 'string' && c.key.startsWith('backup:')) {
                   const backup = c.value;
+                  // Raw rescue archives may contain damaged/unparseable data;
+                  // permanent erasure must not retain that original archive.
+                  if (backup.library?.format === 'feder-recovery-1') {
+                    c.delete();
+                    c.continue();
+                    return;
+                  }
                   if (Array.isArray(backup.library?.projects)) {
                     backup.library.projects = backup.library.projects.filter(
                       (p: Project) => !purged.has(p.id),
@@ -451,6 +458,61 @@ export async function backupForUpdate(library: Library) {
       );
     tx.onerror = () => reject(tx.error);
   });
+}
+// Explicit recovery only: preserve the damaged store and install a validated
+// library in one transaction. A quota failure rolls both changes back.
+export function restoreLibrary(data: unknown) {
+  const library = validateLibrary(data);
+  opened = false;
+  blockedReason = 'Wiederherstellung läuft. Speichern ist angehalten.';
+  const job = queue.then(async () => {
+    const db = await database();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('workspace', 'readwrite');
+      const store = tx.objectStore('workspace');
+      const records: Record<string, unknown> = {};
+      const r = store.openCursor();
+      r.onsuccess = () => {
+        try {
+          const c = r.result;
+          if (c) {
+            if (
+              typeof c.key === 'string' &&
+              !c.key.startsWith('backup:recovery:')
+            )
+              records[c.key] = c.value;
+            c.continue();
+            return;
+          }
+          const previous = records[KEY] as { revision?: number } | undefined;
+          const next = Number.isSafeInteger(previous?.revision)
+            ? previous!.revision! + 1
+            : 1;
+          store.put(
+            {
+              date: new Date().toISOString(),
+              reason: 'Originaldaten vor Wiederherstellung (Rohdaten)',
+              library: { format: 'feder-recovery-1', records },
+            },
+            'backup:recovery:' + crypto.randomUUID(),
+          );
+          store.put({ library, revision: next }, KEY);
+        } catch {
+          tx.abort();
+        }
+      };
+      tx.oncomplete = () => resolve();
+      tx.onabort = () =>
+        reject(
+          Error(
+            'Wiederherstellung nicht gespeichert. Die Originaldaten bleiben unverändert. Sichere die geprüfte Bibliothek als JSON-Datei.',
+          ),
+        );
+    });
+    // Keep writes locked until a new load confirms the committed data.
+  });
+  queue = job.catch(() => {});
+  return job;
 }
 export async function recoveryBackups() {
   const db = await database();

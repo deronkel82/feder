@@ -15,6 +15,7 @@ export type RemoteRecord = {
   parents: string[];
   date: string;
   protocol?: 1 | 2;
+  invalid?: string;
 };
 class TransferError extends Error {
   retryable: boolean;
@@ -147,7 +148,7 @@ export class Drive {
       displayName: string;
     };
   }
-  async list(): Promise<RemoteRecord[]> {
+  async list(options: { recovery?: boolean } = {}): Promise<RemoteRecord[]> {
     const records: RemoteRecord[] = [];
     let page = '';
     const seen = new Set<string>();
@@ -177,6 +178,15 @@ export class Drive {
         try {
           meta = JSON.parse(f.description);
         } catch {
+          if (options.recovery) {
+            records.push({
+              id: f.id,
+              parents: [],
+              date: f.createdTime,
+              invalid: 'Beschädigte Beschreibung',
+            });
+            continue;
+          }
           throw Error(
             'Ein Drive-Syncstand ist beschädigt. Synchronisierung angehalten.',
           );
@@ -186,8 +196,18 @@ export class Drive {
           (meta.protocol !== 1 && meta.protocol !== 2) ||
           !Array.isArray(meta.parents) ||
           !meta.parents.every((p: unknown) => typeof p === 'string')
-        )
+        ) {
+          if (options.recovery) {
+            records.push({
+              id: f.id,
+              parents: [],
+              date: f.createdTime,
+              invalid: 'Unbekanntes Syncformat',
+            });
+            continue;
+          }
           throw Error('Unbekanntes Syncformat. Bitte Feder aktualisieren.');
+        }
         records.push({
           id: f.id,
           parents: meta.parents,
@@ -205,7 +225,11 @@ export class Drive {
     } while (page);
     return records;
   }
-  async read(record: RemoteRecord): Promise<Library> {
+  async read(
+    record: RemoteRecord,
+    options: { cache?: boolean } = {},
+  ): Promise<Library> {
+    if (record.invalid) throw Error(record.invalid);
     this.progress('Drive-Stand wird geprüft …');
     const d = (await this.json(
       API + '/files/' + encodeURIComponent(record.id) + '?alt=media',
@@ -241,7 +265,8 @@ export class Drive {
       const id = blocks[hash];
       if (!id) throw Error('Unvollständiger Syncstand: Datenblock fehlt.');
       this.known.set(hash, id);
-      const cached = await cachedBlock(hash);
+      const cached =
+        options.cache === false ? undefined : await cachedBlock(hash);
       if (cached && (await digest(cached)) === hash) return cached;
       this.progress(`Geänderte Daten laden: Block ${++downloaded} …`);
       const text = JSON.stringify(
