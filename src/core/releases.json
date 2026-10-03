@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.16.1",
+    "date": "2026-10-03",
+    "title": "Lokale Daten und Google-Drive-Sicherungen retten",
+    "changes": [
+      "Bei Ladefehlern erscheint eine Wiederherstellungsansicht statt des Demo-Projekts. Bearbeitung, Speichern und Synchronisierung bleiben gesperrt.",
+      "Fehlende Projektindizes, unvollständige Datenblöcke und Hinweise auf einen geleerten Speicher verhindern einen automatischen Neustart mit Demo-Daten.",
+      "Automatische lokale Wiederherstellungssicherungen halten zwei vorherige Stände vor: beim ersten Speichern nach dem Öffnen und danach höchstens alle fünf Minuten bei Änderungen.",
+      "Der Rohdatenexport rettet bei beschädigten Speicherständen alle verbliebenen Datenblöcke und Sicherungen. Fehlgeschlagene Schreibvorgänge werden vollständig zurückgerollt, bevor weitere Aufträge fortgesetzt werden.",
+      "Die Wiederherstellungsansicht und Projekte & Export bieten einen unabhängigen Google-Drive-Rettungsweg. Sicherungsstände werden vollständig aus Drive geladen und geprüft; gültige Bibliotheken lassen sich als JSON herunterladen oder bei gesperrtem lokalem Speicher nach Sicherung der Originaldaten atomar wiederherstellen.",
+      "Normale Synchronisierungen behalten ältere Drive-Sicherungsstände. Neue Uploads werden ohne Rückgriff auf den lokalen Cache vollständig zurückgelesen und geprüft, bevor der Sync als erfolgreich bestätigt wird. Das benötigt zusätzliche Downloadzeit.",
+      "Ein beschädigter Drive-Stand blockiert nicht die Auswahl älterer Sicherungen im Rettungsbereich. Ausdrückliches dauerhaftes Löschen kann historische Drive-Stände und lokale Rohdatenarchive entfernen."
+    ]
+  },
+  {
     "version": "0.16.0",
     "date": "2026-09-28",
     "title": "Schneller lokal speichern & Profilbilder für Figuren",

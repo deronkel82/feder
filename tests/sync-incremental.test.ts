@@ -5,6 +5,7 @@ import { seed } from '../src/core/model.ts';
 import { Drive, remoteHeads } from '../src/sync/drive.ts';
 import { digest, pack, unpack } from '../src/sync/blocks.ts';
 import { mergeLibraries, syncEqual } from '../src/sync/merge.ts';
+import { readRecovery, verifyRemoteBackup } from '../src/sync/recovery.ts';
 
 const noWait = async () => {};
 async function evictCache(hashes?: string[]) {
@@ -417,4 +418,80 @@ void test('download body abort retries, while permanent errors do not loop', asy
     /Anmeldung abgelaufen/,
   );
   assert.equal(calls, 3);
+});
+
+void test('Drive rescue reads complete remote blocks even when browser cache hides a missing block, and an older stand remains recoverable', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const original = seed();
+  original.projects[0].scenes[0].text = 'Vollständiger älterer Stand';
+  const firstId = await drive.create(original, []);
+  const first = (await drive.list()).find((r) => r.id === firstId)!;
+  await verifyRemoteBackup(drive, first, original);
+  const changed = structuredClone(original);
+  changed.projects[0].scenes[0].text = 'Neuer Stand';
+  const secondId = await drive.create(changed, [firstId]);
+  const second = (await drive.list()).find((r) => r.id === secondId)!;
+  await verifyRemoteBackup(drive, second, changed);
+  const firstManifest = JSON.parse(api.files.get(firstId)!.text);
+  const secondManifest = JSON.parse(api.files.get(secondId)!.text);
+  const uniqueHash = Object.keys(secondManifest.blocks).find(
+    (hash) => !firstManifest.blocks[hash],
+  )!;
+  api.files.delete(secondManifest.blocks[uniqueHash]);
+  assert.deepEqual(
+    await drive.read(second),
+    changed,
+    'optional warm cache can still serve this browser',
+  );
+  await assert.rejects(readRecovery(drive, second), /404/);
+  assert.deepEqual(await readRecovery(drive, first), original);
+  assert.ok(api.files.has(firstId));
+  assert.ok(api.files.has(secondId));
+  assert.equal(api.requests.filter((r) => r.method === 'DELETE').length, 0);
+});
+void test('complete Drive roundtrip verifies versions and rejects a different expected library', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const library = seed();
+  library.snapshots.push({
+    id: 'restore-version',
+    date: 'now',
+    project: structuredClone(library.projects[0]),
+  });
+  const id = await drive.create(library, []);
+  const record = (await drive.list()).find((r) => r.id === id)!;
+  await verifyRemoteBackup(drive, record, library);
+  assert.deepEqual(await readRecovery(drive, record), library);
+  const wrong = structuredClone(library);
+  wrong.projects[0].scenes[0].text = 'Unbestätigte Änderungen';
+  await assert.rejects(
+    verifyRemoteBackup(drive, record, wrong),
+    /stimmt nicht/,
+  );
+});
+void test('recovery listing keeps valid older backups available when another manifest description is corrupt', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const library = seed();
+  const id = await drive.create(library, []);
+  api.files.set('broken-description', {
+    id: 'broken-description',
+    appProperties: { federSync: '1' },
+    description: 'not JSON',
+    text: 'broken',
+  });
+  await assert.rejects(drive.list(), /beschädigt/);
+  const records = await drive.list({ recovery: true });
+  assert.ok(records.find((r) => r.id === 'broken-description')?.invalid);
+  assert.deepEqual(
+    await readRecovery(
+      drive,
+      records.find((r) => r.id === id)!,
+    ),
+    library,
+  );
 });

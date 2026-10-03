@@ -1,4 +1,5 @@
 import { BookTools } from './modules/book-tools';
+import { RecoveryTools } from './sync/recovery-panel';
 import { WhatsNew } from './modules/whats-new';
 import { readPosition, useWritingPosition } from './modules/writing-position';
 import { SyncStatus } from './sync/status';
@@ -69,7 +70,13 @@ import { modules } from './modules/registry';
 import { analyze } from './modules/analysis';
 import { useAnalysis } from './modules/use-analysis';
 import { createAutosave } from './core/autosave';
-import { load, save } from './core/storage';
+import {
+  load,
+  save,
+  rawBackup,
+  recoveryBackups,
+  download,
+} from './core/storage';
 import {
   newScene,
   type Project,
@@ -125,13 +132,94 @@ export default function App() {
   useEffect(() => {
     void load().then(setInitial);
   }, []);
-  return initial ? (
+  return initial?.error ? (
+    <RecoveryScreen error={initial.error} library={initial.library} />
+  ) : initial ? (
     <Workspace initial={initial} />
   ) : (
     <div className="boot-screen">
       <Feather size={30} />
       <p>Dein Atelier wird geöffnet …</p>
     </div>
+  );
+}
+function RecoveryScreen({
+  error,
+  library,
+}: {
+  error: string;
+  library: LibraryData;
+}) {
+  const updates = useUpdates(library, error);
+  const [message, setMessage] = useState('');
+  const [backups, setBackups] = useState<
+    Awaited<ReturnType<typeof recoveryBackups>>
+  >([]);
+  return (
+    <main className="boot-screen recovery-screen" role="alert">
+      <Feather size={30} />
+      <h1>Deine Projekte konnten nicht geöffnet werden</h1>
+      <p>{error}</p>
+      <p>
+        Feder ersetzt deine Projekte nicht durch ein Demo-Projekt. Bearbeitung
+        und Synchronisierung bleiben gesperrt.
+      </p>
+      <button
+        onClick={async () => {
+          try {
+            download(await rawBackup(), 'Feder-Rohdaten.json');
+            setMessage('Rohdaten heruntergeladen. Bewahre diese Datei auf.');
+          } catch {
+            setMessage(
+              'Rohdaten derzeit nicht lesbar. Bitte keine Browserdaten löschen.',
+            );
+          }
+        }}
+      >
+        Originaldaten herunterladen
+      </button>
+      <button
+        onClick={async () => {
+          try {
+            const list = await recoveryBackups();
+            setBackups(list);
+            setMessage(
+              list.length
+                ? 'Sicherung herunterladen und für die Wiederherstellung aufbewahren.'
+                : 'Keine lokale Sicherung gefunden. Falls Google Drive verbunden war, können dort weitere Daten liegen.',
+            );
+          } catch {
+            setMessage(
+              'Sicherungen derzeit nicht lesbar. Bitte später erneut versuchen.',
+            );
+          }
+        }}
+      >
+        Automatische Sicherungen anzeigen
+      </button>
+      {backups.map((b) => (
+        <button
+          key={b.key}
+          onClick={() =>
+            download(
+              JSON.stringify(b.library, null, 2),
+              'Feder-Wiederherstellung.json',
+            )
+          }
+        >
+          {b.reason} · {new Date(b.date).toLocaleString('de')} · Herunterladen
+        </button>
+      ))}
+      <button onClick={() => location.reload()}>Erneut öffnen</button>
+      <UpdateNotice updates={updates} />
+      <p>
+        Bei einem bereitstehenden Update und gesperrtem Speicher: zuerst die
+        Originaldaten herunterladen, dann alle Feder-Fenster und die
+        Homescreen-App schließen und erneut öffnen. Keine Browserdaten löschen.
+      </p>
+      <RecoveryTools allowRestore />
+      {message && <output>{message}</output>}
+    </main>
   );
 }
 function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {

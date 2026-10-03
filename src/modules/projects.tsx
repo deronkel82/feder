@@ -46,6 +46,7 @@ import {
 } from '../core/model';
 import { download, rawBackup, recoveryBackups } from '../core/storage';
 import { SeriesFields } from './series';
+import { RecoveryTools } from '../sync/recovery-panel';
 import { Versions } from './versions';
 export function ProjectDialog({
   open,
@@ -494,6 +495,7 @@ export function ProjectDialog({
           </button>
         ))}
         {message && <output className="dialog-message">{message}</output>}
+        <RecoveryTools />
       </DialogContent>
     </Dialog>
   );

@@ -133,6 +133,14 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
         nächsten Abgleich übertragen. Schrift, Farben und andere
         Geräteeinstellungen bleiben lokal.
       </p>
+      <p className="muted small">
+        Neue Sicherungsstände werden vollständig aus Drive zurückgelesen und
+        geprüft, bevor der Abgleich als erfolgreich gilt. Das benötigt
+        zusätzliche Downloadzeit. Normale Abgleiche behalten ältere Drive-Stände
+        zur Rettung; ausdrücklich dauerhaft gelöschte Projekte werden weiterhin
+        berücksichtigt. Geprüfte Sicherungen findest du unter „Projekte &
+        Export“.
+      </p>
       {sync.lastSync && (
         <p>
           Letzter erfolgreicher Abgleich:{' '}

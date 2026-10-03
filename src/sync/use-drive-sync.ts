@@ -5,6 +5,7 @@ import { Drive, remoteHeads } from './drive';
 import { authorize, loadGoogle } from './google';
 import { mergeLibraries, syncEqual } from './merge';
 import { GOOGLE_CLIENT_ID } from './config';
+import { verifyRemoteBackup } from './recovery';
 function preference(key: string, fallback = '') {
   try {
     return localStorage.getItem(key) || fallback;
@@ -205,6 +206,22 @@ export function useDriveSync(
               )
             : undefined;
         unchanged();
+        if (uploaded) {
+          setMessage(
+            'Drive-Sicherung vollständig auf Wiederherstellbarkeit prüfen …',
+          );
+          await verifyRemoteBackup(
+            drive,
+            {
+              id: uploaded,
+              parents: heads.map((h) => h.id),
+              protocol: 2,
+              date: new Date().toISOString(),
+            },
+            result,
+          );
+          unchanged();
+        }
         const date = new Date().toISOString();
         setMessage('Abgeglichenen Stand lokal sichern …');
         await save(result, {
@@ -223,10 +240,14 @@ export function useDriveSync(
         setSyncedLibrary(result);
         setMessage('Sync abschließen …');
         let cleanupFailed = false;
-        // Only delete records observed before our immutable commit. A simultaneous writer's new record is never removed.
+        // Keep immutable manifests as recoverable history. Delete observed
+        // older manifests only for an explicit permanent project purge.
         {
+          const permanentPurge = (result.purgedProjectIds || []).some(
+            (id) => !(base?.purgedProjectIds || []).includes(id),
+          );
           for (const record of records.filter(
-            (r) => uploaded || !heads.some((h) => h.id === r.id),
+            () => permanentPurge && !!uploaded,
           )) {
             try {
               await drive.remove(record.id);
