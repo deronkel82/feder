@@ -8,6 +8,10 @@ import {
   MAX_BLOCKS,
 } from './blocks.ts';
 import { cachedBlock, cacheBlock } from './block-cache.ts';
+import {
+  createTransferProgress,
+  type TransferProgress,
+} from './transfer-progress.ts';
 export const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const API = 'https://www.googleapis.com/drive/v3';
 export type RemoteRecord = {
@@ -16,6 +20,7 @@ export type RemoteRecord = {
   date: string;
   protocol?: 1 | 2;
   invalid?: string;
+  supersedes?: string[];
 };
 class TransferError extends Error {
   retryable: boolean;
@@ -44,15 +49,18 @@ export class Drive {
   private known = new Map<string, string>();
   private progress: (message: string) => void;
   private pause: (ms: number) => Promise<void>;
+  private transfer: ReturnType<typeof createTransferProgress>;
   constructor(
     token: string,
     progress: (message: string) => void = () => {},
     pause = (ms: number) =>
       new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    transfer: (value: TransferProgress) => void = () => {},
   ) {
     this.token = token;
     this.progress = progress;
     this.pause = pause;
+    this.transfer = createTransferProgress(transfer);
   }
   async request(url: string, init: RequestInit = {}, resume = false) {
     if (new URL(url).origin !== 'https://www.googleapis.com')
@@ -178,41 +186,37 @@ export class Drive {
         try {
           meta = JSON.parse(f.description);
         } catch {
-          if (options.recovery) {
-            records.push({
-              id: f.id,
-              parents: [],
-              date: f.createdTime,
-              invalid: 'Beschädigte Beschreibung',
-            });
-            continue;
-          }
-          throw Error(
-            'Ein Drive-Syncstand ist beschädigt. Synchronisierung angehalten.',
-          );
+          records.push({
+            id: f.id,
+            parents: [],
+            date: f.createdTime,
+            invalid: 'Beschädigte Beschreibung',
+          });
+          continue;
         }
         if (
           !meta ||
           (meta.protocol !== 1 && meta.protocol !== 2) ||
           !Array.isArray(meta.parents) ||
-          !meta.parents.every((p: unknown) => typeof p === 'string')
+          !meta.parents.every((p: unknown) => typeof p === 'string') ||
+          (meta.supersedes !== undefined &&
+            (!Array.isArray(meta.supersedes) ||
+              !meta.supersedes.every((p: unknown) => typeof p === 'string')))
         ) {
-          if (options.recovery) {
-            records.push({
-              id: f.id,
-              parents: [],
-              date: f.createdTime,
-              invalid: 'Unbekanntes Syncformat',
-            });
-            continue;
-          }
-          throw Error('Unbekanntes Syncformat. Bitte Feder aktualisieren.');
+          records.push({
+            id: f.id,
+            parents: [],
+            date: f.createdTime,
+            invalid: 'Unbekanntes Syncformat',
+          });
+          continue;
         }
         records.push({
           id: f.id,
           parents: meta.parents,
           date: f.createdTime,
           protocol: meta.protocol,
+          ...(meta.supersedes ? { supersedes: meta.supersedes } : {}),
         });
       }
       page = data.nextPageToken || '';
@@ -223,7 +227,7 @@ export class Drive {
         throw Error('Drive-Dateiliste unvollständig.');
       seen.add(page);
     } while (page);
-    return records;
+    return options.recovery ? records : activeRecords(records);
   }
   async read(
     record: RemoteRecord,
@@ -231,6 +235,7 @@ export class Drive {
   ): Promise<Library> {
     if (record.invalid) throw Error(record.invalid);
     this.progress('Drive-Stand wird geprüft …');
+    this.transfer.begin('Drive-Stand vorbereiten', null, 'blocks');
     const d = (await this.json(
       API + '/files/' + encodeURIComponent(record.id) + '?alt=media',
     )) as {
@@ -239,15 +244,22 @@ export class Drive {
       library?: unknown;
       root?: string;
       blocks?: Record<string, string>;
+      supersedes?: string[];
     };
     if (
       !d ||
       (d.protocol !== 1 && d.protocol !== 2) ||
       (record.protocol !== undefined && record.protocol !== d.protocol) ||
-      JSON.stringify(d.parents) !== JSON.stringify(record.parents)
+      JSON.stringify(d.parents) !== JSON.stringify(record.parents) ||
+      JSON.stringify(d.supersedes || []) !==
+        JSON.stringify(record.supersedes || [])
     )
       throw Error('Unvollständiger Syncstand.');
-    if (d.protocol === 1) return validateLibrary(d.library);
+    if (d.protocol === 1) {
+      const library = validateLibrary(d.library);
+      this.transfer.finish();
+      return library;
+    }
     if (
       !isHash(d.root) ||
       !d.blocks ||
@@ -260,14 +272,25 @@ export class Drive {
     )
       throw Error('Ungültiges inkrementelles Syncformat.');
     let downloaded = 0;
+    let processed = 0;
     const blocks = d.blocks;
+    this.transfer.begin(
+      options.cache === false
+        ? 'Sicherung vollständig aus Drive prüfen'
+        : 'Drive-Daten laden',
+      Object.keys(blocks).length,
+      'blocks',
+    );
     const value = await unpack(d.root, async (hash) => {
       const id = blocks[hash];
       if (!id) throw Error('Unvollständiger Syncstand: Datenblock fehlt.');
       this.known.set(hash, id);
       const cached =
         options.cache === false ? undefined : await cachedBlock(hash);
-      if (cached && (await digest(cached)) === hash) return cached;
+      if (cached && (await digest(cached)) === hash) {
+        this.transfer.update(++processed);
+        return cached;
+      }
       this.progress(`Geänderte Daten laden: Block ${++downloaded} …`);
       const text = JSON.stringify(
         await this.json(
@@ -278,9 +301,12 @@ export class Drive {
       if ((await digest(text)) !== hash)
         throw Error('Beschädigter Sync-Datenblock.');
       await cacheBlock(hash, text);
+      this.transfer.update(++processed);
       return text;
     });
-    return validateLibrary(value);
+    const library = validateLibrary(value);
+    this.transfer.finish();
+    return library;
   }
   private async discoverBlocks() {
     let page = '';
@@ -352,21 +378,35 @@ export class Drive {
       )
         this.known.set(file.appProperties.hash, file.id);
   }
-  async create(library: Library, parents: string[]): Promise<string> {
+  async create(
+    library: Library,
+    parents: string[],
+    options: { fresh?: boolean; staged?: boolean; supersedes?: string[] } = {},
+  ): Promise<string> {
     this.progress('Geänderte Datenblöcke werden ermittelt …');
+    this.transfer.begin('Sicherung vorbereiten', null, 'bytes');
     const packed = await pack(library);
+    if (options.fresh) this.known.clear();
     // The remote head has already supplied IDs for its reachable blocks.
     // Probe only a few new hashes, including interrupted uploads. A cold
     // first transfer still uses the paginated full listing.
     const unknown = [...packed.blocks.keys()].filter(
       (hash) => !this.known.has(hash),
     );
-    if (unknown.length <= 16) await this.findBlocks(unknown);
-    else await this.discoverBlocks();
+    if (!options.fresh) {
+      if (unknown.length <= 16) await this.findBlocks(unknown);
+      else await this.discoverBlocks();
+    }
     const missing = [...packed.blocks].filter(
       ([hash]) => !this.known.has(hash),
     );
     let done = 0;
+    let sent = 0;
+    this.transfer.begin(
+      'Sicherung hochladen',
+      missing.reduce((n, [, text]) => n + new Blob([text]).size, 0),
+      'bytes',
+    );
     for (const [hash, text] of missing) {
       const label = `Geänderte Daten hochladen: ${++done}/${missing.length}`;
       const id = await this.upload(
@@ -378,30 +418,52 @@ export class Drive {
           appProperties: { federBlock: '2', hash },
         },
         label,
+        (bytes) => this.transfer.update(sent + bytes),
       );
       this.known.set(hash, id);
       await cacheBlock(hash, text);
+      sent += new Blob([text]).size;
+      this.transfer.update(sent);
     }
     const blocks = Object.fromEntries(
       [...packed.blocks.keys()].map((hash) => [hash, this.known.get(hash)!]),
     );
     // The manifest is the commit: publish only after every block is confirmed.
+    const history = options.supersedes
+      ? { supersedes: options.supersedes }
+      : {};
+    const manifest = JSON.stringify({
+      protocol: 2,
+      parents,
+      root: packed.root,
+      blocks,
+      ...history,
+    });
+    this.transfer.begin(
+      'Sicherungsstand abschließen',
+      new Blob([manifest]).size,
+      'bytes',
+    );
     return this.upload(
-      JSON.stringify({ protocol: 2, parents, root: packed.root, blocks }),
+      manifest,
       {
         name: 'Feder-Sync-' + crypto.randomUUID() + '.json',
         parents: ['appDataFolder'],
         mimeType: 'application/json',
-        appProperties: { federSync: '1' },
-        description: JSON.stringify({ protocol: 2, parents }),
+        appProperties: options.staged
+          ? { federCandidate: '1' }
+          : { federSync: '1' },
+        description: JSON.stringify({ protocol: 2, parents, ...history }),
       },
       'Syncstand abschließen',
+      (bytes) => this.transfer.update(bytes),
     );
   }
   async upload(
     text: string,
     metadata: Record<string, unknown>,
     label: string,
+    acknowledged: (bytes: number) => void = () => {},
   ): Promise<string> {
     const payload = new Blob([text], { type: 'application/json' });
     const start = await this.request(
@@ -445,6 +507,7 @@ export class Drive {
           const result = (await response.json()) as { id?: string };
           if (typeof result.id !== 'string' || !result.id)
             throw Error('Drive hat den Syncstand nicht bestätigt.');
+          acknowledged(payload.size);
           return result.id;
         }
         const range = response.headers.get('Range');
@@ -466,6 +529,7 @@ export class Drive {
           await this.pause(500 * 2 ** (failures - 1));
         } else failures = 0;
         offset = next;
+        acknowledged(offset);
         probe = false;
       } catch (error) {
         const failure = networkError(error);
@@ -490,6 +554,26 @@ export class Drive {
       method: 'DELETE',
     });
   }
+  async publishCandidate(id: string) {
+    await this.request(API + '/files/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appProperties: { federSync: '1' } }),
+    });
+  }
+}
+export function activeRecords(records: RemoteRecord[]) {
+  const superseded = new Set(
+    records.filter((r) => !r.invalid).flatMap((r) => r.supersedes || []),
+  );
+  const active = records.filter((r) => !superseded.has(r.id));
+  const invalid = active.find((r) => r.invalid);
+  if (invalid)
+    throw Error(
+      invalid.invalid +
+        '. Ein Drive-Syncstand ist beschädigt oder unbekannt. Synchronisierung angehalten. Der lokale Stand kann über „Funktionierenden lokalen Stand als Drive-Sicherung übernehmen“ gesichert werden.',
+    );
+  return active;
 }
 export function remoteHeads(records: RemoteRecord[]) {
   const byId = new Map(records.map((r) => [r.id, r]));

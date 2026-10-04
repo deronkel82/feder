@@ -1,5 +1,9 @@
 import type { DriveSync } from './use-drive-sync';
+import { useState } from 'react';
+import { TransferStatus } from './transfer-status';
+import { imageInventory } from '../core/image-inventory';
 export function SyncPanel({ sync }: { sync: DriveSync }) {
+  const [acknowledged, setAcknowledged] = useState(false);
   return (
     <section className="sync-panel">
       <h2>Google Drive</h2>
@@ -112,6 +116,65 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
             />
             Automatisch bei geöffneter App synchronisieren
           </label>
+          <details className="settings-info">
+            <summary>
+              Funktionierenden lokalen Stand als Drive-Sicherung übernehmen
+            </summary>
+            <p>
+              Verwende dies auf dem Gerät mit der vollständigen Bibliothek. Der
+              lokale Stand wird vollständig und ohne Zusammenführen als neuer
+              Drive-Stand gesichert. Cover und Figurenbilder sind
+              eingeschlossen. Schließe Feder auf allen anderen Geräten und
+              aktualisiere sie vor dem nächsten Sync.
+            </p>
+            <button
+              disabled={sync.busy || sync.connecting}
+              onClick={() => {
+                setAcknowledged(false);
+                void sync.prepareReplacement();
+              }}
+            >
+              1. Komplette Sicherung mit Bilddateien herunterladen
+            </button>
+            {sync.replacementReady && (
+              <>
+                <p>
+                  {sync.replacementReady.projects.length} Projekte ·{' '}
+                  {sync.replacementReady.snapshots.length} Versionen ·{' '}
+                  {imageInventory(sync.replacementReady).unique} eingebettete
+                  Bilder (einschließlich historischer Fassungen)
+                </p>
+                <ul>
+                  {sync.replacementReady.projects.map((p) => (
+                    <li key={p.id}>{p.title}</li>
+                  ))}
+                </ul>
+                <label className="format-check">
+                  <input
+                    type="checkbox"
+                    checked={acknowledged}
+                    onChange={(event) => setAcknowledged(event.target.checked)}
+                    disabled={sync.busy}
+                  />
+                  Ich habe die Sicherungsdatei gespeichert und geprüft. Dies ist
+                  die vollständige Bibliothek; Feder ist auf allen anderen
+                  Geräten geschlossen.
+                </label>
+                <button
+                  className="primary-button"
+                  disabled={!acknowledged || sync.busy || sync.connecting}
+                  onClick={() => void sync.synchronize('replace')}
+                >
+                  2. Diesen lokalen Stand als Drive-Sicherung übernehmen
+                </button>
+                <p className="muted small">
+                  Die Automatik bleibt ausgeschaltet. Nach erfolgreicher Prüfung
+                  kannst du sie wieder einschalten. Ältere Drive-Stände bleiben
+                  zur Rettung erhalten.
+                </p>
+              </>
+            )}
+          </details>
         </>
       )}
       <p className="muted small">
@@ -161,6 +224,7 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
         }
       </p>
       <output aria-live="polite">{sync.message}</output>
+      <TransferStatus progress={sync.transfer} busy={sync.busy} />
       <p className="muted small">
         Texte werden über HTTPS an dein Google Drive übertragen, jedoch nicht
         zusätzlich Ende-zu-Ende verschlüsselt. Du kannst Feder den Zugriff

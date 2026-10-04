@@ -6,6 +6,9 @@ import { Drive, remoteHeads } from '../src/sync/drive.ts';
 import { digest, pack, unpack } from '../src/sync/blocks.ts';
 import { mergeLibraries, syncEqual } from '../src/sync/merge.ts';
 import { readRecovery, verifyRemoteBackup } from '../src/sync/recovery.ts';
+import { replaceFromLocal } from '../src/sync/replace.ts';
+import { illustratedLibrary, jpeg } from './illustrated-fixture.ts';
+import { imageInventory } from '../src/core/image-inventory.ts';
 
 const noWait = async () => {};
 async function evictCache(hashes?: string[]) {
@@ -124,6 +127,12 @@ function server() {
     if (method === 'DELETE') {
       files.delete(id);
       return new Response(null, { status: 204 });
+    }
+    if (method === 'PATCH') {
+      if (!file) return new Response(null, { status: 404 });
+      const changes = JSON.parse(init.body as string);
+      file.appProperties = { ...file.appProperties, ...changes.appProperties };
+      return Response.json({ id });
     }
     if (!file) return new Response(null, { status: 404 });
     if (file.appProperties?.federBlock) blockReads++;
@@ -494,4 +503,157 @@ void test('recovery listing keeps valid older backups available when another man
     ),
     library,
   );
+});
+
+void test('local authority replaces damaged Drive metadata and missing blocks with fresh verified data including all images', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const broken = seed();
+  broken.projects[0].title = 'Defekter Stand';
+  const oldId = await drive.create(broken, []);
+  const oldManifest = JSON.parse(api.files.get(oldId)!.text);
+  api.files.delete(oldManifest.blocks[oldManifest.root]);
+  api.files.set('broken-metadata', {
+    id: 'broken-metadata',
+    description: 'broken',
+    appProperties: { federSync: '1' },
+    text: 'broken',
+  });
+  const library = illustratedLibrary();
+  const before = structuredClone(library);
+  const record = await replaceFromLocal(drive, library);
+  assert.deepEqual(library, before, 'local data is never replaced or mutated');
+  assert.deepEqual(await readRecovery(drive, record), library);
+  assert.deepEqual(
+    imageInventory(await readRecovery(drive, record)),
+    imageInventory(library),
+  );
+  const active = remoteHeads(await drive.list());
+  assert.equal(active.length, 1);
+  assert.equal(active[0].id, record.id);
+  assert.deepEqual(
+    await readRecovery(new Drive('other-device', () => {}, noWait), active[0]),
+    library,
+  );
+  assert.ok(api.files.has(oldId));
+  assert.ok(
+    (await drive.list({ recovery: true })).some(
+      (r) => r.id === 'broken-metadata',
+    ),
+  );
+  assert.equal(api.requests.filter((r) => r.method === 'DELETE').length, 0);
+});
+void test('a missing portrait block cannot publish or supersede an existing valid Drive backup', async (t) => {
+  const api = server();
+  const old = seed();
+  const drive = new Drive('test', () => {}, noWait);
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const oldId = await drive.create(old, []);
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (input: string | URL | Request, init?: RequestInit) => {
+      const response = await api.fetch(input, init);
+      const candidate = [...api.files.values()].find(
+        (file) => file.appProperties?.federCandidate === '1',
+      );
+      if (candidate) {
+        const manifest = JSON.parse(candidate.text);
+        const imageId = Object.values(manifest.blocks).find((id) =>
+          api.files.get(id as string)?.text.includes(jpeg),
+        );
+        if (imageId) api.files.delete(imageId as string);
+      }
+      return response;
+    },
+  );
+  await assert.rejects(replaceFromLocal(drive, illustratedLibrary()), /404/);
+  assert.deepEqual(
+    remoteHeads(await drive.list()).map((r) => r.id),
+    [oldId],
+  );
+  assert.deepEqual(await readRecovery(drive, (await drive.list())[0]), old);
+  assert.equal(
+    api.requests.filter((r) => r.method === 'PATCH' || r.method === 'DELETE')
+      .length,
+    0,
+  );
+});
+void test('another device publishing during repair prevents promotion of the candidate', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const old = seed();
+  const drive = new Drive('test', () => {}, noWait);
+  const oldId = await drive.create(old, []);
+  let inserted = false;
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (input: string | URL | Request, init?: RequestInit) => {
+      const response = await api.fetch(input, init);
+      if (
+        !inserted &&
+        [...api.files.values()].some(
+          (file) => file.appProperties?.federCandidate === '1',
+        )
+      ) {
+        inserted = true;
+        api.files.set('peer', {
+          id: 'peer',
+          appProperties: { federSync: '1' },
+          description: JSON.stringify({ protocol: 1, parents: [oldId] }),
+          text: JSON.stringify({ protocol: 1, parents: [oldId], library: old }),
+        });
+      }
+      return response;
+    },
+  );
+  await assert.rejects(
+    replaceFromLocal(drive, illustratedLibrary()),
+    /anderes Gerät/,
+  );
+  assert.deepEqual(
+    remoteHeads(await drive.list()).map((r) => r.id),
+    ['peer'],
+  );
+  assert.equal(api.requests.filter((r) => r.method === 'PATCH').length, 0);
+});
+void test('changing local data during repair prevents candidate promotion', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  let checks = 0;
+  await assert.rejects(
+    replaceFromLocal(drive, illustratedLibrary(), () => {
+      if (++checks > 1) throw Error('Lokale Änderungen');
+    }),
+    /Lokale Änderungen/,
+  );
+  assert.deepEqual(await drive.list(), []);
+  assert.equal(api.requests.filter((r) => r.method === 'PATCH').length, 0);
+});
+void test('acknowledged upload progress and cold download progress finish at their measured totals', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const events: import('../src/sync/transfer-progress.ts').TransferProgress[] =
+    [];
+  const drive = new Drive(
+    'test',
+    () => {},
+    noWait,
+    (progress) => events.push(progress),
+  );
+  const library = illustratedLibrary();
+  const id = await drive.create(library, []);
+  const upload = events.filter((e) => e.phase === 'Sicherung hochladen');
+  assert.ok(upload.length > 1);
+  assert.equal(upload.at(-1)!.completed, upload.at(-1)!.total);
+  const record = (await drive.list()).find((r) => r.id === id)!;
+  await readRecovery(drive, record);
+  const download = events.filter(
+    (e) => e.phase === 'Sicherung vollständig aus Drive prüfen',
+  );
+  assert.ok(download.length > 1);
+  assert.equal(download.at(-1)!.completed, download.at(-1)!.total);
 });

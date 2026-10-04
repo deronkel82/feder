@@ -5,6 +5,10 @@ import { Drive, type RemoteRecord } from './drive';
 import { authorize, loadGoogle } from './google';
 import { GOOGLE_CLIENT_ID } from './config';
 import { readRecovery, recoveryOrder } from './recovery';
+import type { TransferProgress } from './transfer-progress';
+import { TransferStatus } from './transfer-status';
+import { imageInventory } from '../core/image-inventory';
+import { backupBundle } from '../core/backup-bundle';
 
 export function RecoveryTools({
   allowRestore = false,
@@ -15,6 +19,7 @@ export function RecoveryTools({
   const [busy, setBusy] = useState(false);
   const [account, setAccount] = useState('');
   const [message, setMessage] = useState('');
+  const [transfer, setTransfer] = useState<TransferProgress | null>(null);
   const [records, setRecords] = useState<RemoteRecord[]>([]);
   const [limit, setLimit] = useState(20);
   const [preview, setPreview] = useState<{
@@ -27,7 +32,7 @@ export function RecoveryTools({
     setPreview(null);
     try {
       const auth = await authorize(GOOGLE_CLIENT_ID);
-      drive.current = new Drive(auth.token, setMessage);
+      drive.current = new Drive(auth.token, setMessage, undefined, setTransfer);
       const user = await drive.current.account();
       setAccount(user.emailAddress || user.displayName);
       setMessage('Vorhandene Drive-Sicherungen suchen …');
@@ -47,6 +52,7 @@ export function RecoveryTools({
   async function inspect(record: RemoteRecord) {
     if (!drive.current) return;
     setBusy(true);
+    setTransfer(null);
     setPreview(null);
     try {
       const library = await readRecovery(drive.current, record);
@@ -170,7 +176,8 @@ export function RecoveryTools({
           <p>
             {preview.library.projects.length} Projekte ·{' '}
             {preview.library.projects.reduce((n, p) => n + p.scenes.length, 0)}{' '}
-            Texte/Szenen · {preview.library.snapshots.length} Versionen
+            Texte/Szenen · {preview.library.snapshots.length} Versionen ·{' '}
+            {imageInventory(preview.library).unique} eingebettete Bilder
           </p>
           <ul>
             {preview.library.projects.map((p) => (
@@ -207,9 +214,26 @@ export function RecoveryTools({
               importieren. Deine bestehenden Projekte bleiben dabei erhalten.
             </p>
           )}
+          <button
+            disabled={busy}
+            onClick={async () => {
+              try {
+                download(
+                  await backupBundle(preview.library),
+                  'Feder-Gepruefte-Sicherung-mit-Bildern.zip',
+                  'application/zip',
+                );
+              } catch (error) {
+                setMessage((error as Error).message);
+              }
+            }}
+          >
+            Geprüfte Sicherung mit Bilddateien als ZIP herunterladen
+          </button>
         </div>
       )}
       <output aria-live="polite">{message}</output>
+      <TransferStatus progress={transfer} busy={busy} />
     </section>
   );
 }
