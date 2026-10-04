@@ -9,6 +9,7 @@ import { verifyRemoteBackup } from './recovery';
 import { replaceFromLocal } from './replace';
 import type { TransferProgress } from './transfer-progress';
 import { backupBundle } from '../core/backup-bundle';
+import { imageInventory } from '../core/image-inventory';
 import {
   readDrivePreview,
   restoreFromDrive,
@@ -17,6 +18,9 @@ import {
   unseenRepairs,
   type DrivePreview,
 } from './restore-from-drive';
+export type RepairResult =
+  | { ok: true; date: string; projects: number; images: number }
+  | { ok: false; message: string };
 function preference(key: string, fallback = '') {
   try {
     return localStorage.getItem(key) || fallback;
@@ -41,6 +45,8 @@ export function useDriveSync(
   const [automatic, setAutomatic] = useState(
     () => preference('feder.sync.auto') === 'true',
   );
+  const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
+  const [repairNoticeOpen, setRepairNoticeOpen] = useState(false);
   const [transfer, setTransfer] = useState<TransferProgress | null>(null);
   const [replacementReady, setReplacementReady] = useState<Library | null>(
     null,
@@ -153,6 +159,8 @@ export function useDriveSync(
     setMessage('Komplette Sicherung mit Bilddateien vorbereiten …');
     replacement.current = null;
     setReplacementReady(null);
+    setRepairResult(null);
+    setRepairNoticeOpen(false);
     try {
       const local = latest.current;
       const checked = validateLibrary(local);
@@ -291,6 +299,10 @@ export function useDriveSync(
       setBusy(true);
       setTransfer(null);
       setMessage('Bibliotheken werden abgeglichen …');
+      if (mode === 'replace') {
+        setRepairResult(null);
+        setRepairNoticeOpen(false);
+      }
       try {
         const local = latest.current;
         flushLocalSaves();
@@ -315,6 +327,13 @@ export function useDriveSync(
             key: auth.key,
             checkpoint: { base: local, date, repairs: [record.id] },
           });
+          setRepairResult({
+            ok: true,
+            date,
+            projects: local.projects.length,
+            images: imageInventory(local).unique,
+          });
+          setRepairNoticeOpen(true);
           setSyncedLibrary(local);
           setLastSync(date);
           setAttention(false);
@@ -459,6 +478,10 @@ export function useDriveSync(
               : ''),
         );
       } catch (e) {
+        if (mode === 'replace') {
+          setRepairResult({ ok: false, message: (e as Error).message });
+          setRepairNoticeOpen(true);
+        }
         setAttention(true);
         setMessage((e as Error).message);
       } finally {
@@ -538,6 +561,9 @@ export function useDriveSync(
     account,
     automatic,
     transfer,
+    repairResult,
+    repairNoticeOpen,
+    dismissRepairNotice: () => setRepairNoticeOpen(false),
     prepareReplacement,
     prepareRestore,
     confirmRestore,

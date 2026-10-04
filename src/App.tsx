@@ -1,5 +1,6 @@
 import { BookTools } from './modules/book-tools';
 import { RecoveryTools } from './sync/recovery-panel';
+import { RepairOutcome, repairOutcomeTitle } from './sync/repair-outcome';
 import { TransferStatus } from './sync/transfer-status';
 import { WhatsNew } from './modules/whats-new';
 import { readPosition, useWritingPosition } from './modules/writing-position';
@@ -1277,6 +1278,32 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           <TransferStatus progress={driveSync.transfer} busy={driveSync.busy} />
         </DialogContent>
       </Dialog>
+      {driveSync.repairResult && (
+        <Dialog
+          open={driveSync.repairNoticeOpen && !driveSync.busy}
+          onOpenChange={(open) => {
+            if (!open) driveSync.dismissRepairNotice();
+          }}
+        >
+          <DialogContent>
+            <DialogTitle>
+              {repairOutcomeTitle(driveSync.repairResult)}
+            </DialogTitle>
+            <DialogDescription>
+              {driveSync.repairResult.ok
+                ? 'Upload und vollständige Prüfung sind abgeschlossen.'
+                : 'Dieser Versuch wurde nicht als erfolgreich bestätigt.'}
+            </DialogDescription>
+            <RepairOutcome result={driveSync.repairResult} />
+            <button
+              className="primary-button"
+              onClick={driveSync.dismissRepairNotice}
+            >
+              Verstanden
+            </button>
+          </DialogContent>
+        </Dialog>
+      )}
       <SettingsDialog
         open={settings}
         initialSection={settingsSection}

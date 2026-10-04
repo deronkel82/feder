@@ -6,7 +6,8 @@
     "changes": [
       "Ein eigener Übernahmeweg prüft die aktive Drive-Bibliothek vollständig, zeigt die Projektliste und sichert den bisherigen lokalen Bestand als ZIP. Nach ausdrücklicher Bestätigung ersetzt er auch auf Geräten mit altem Sync-Verlauf die gesamte lokale Bibliothek einschließlich Bildern und Versionen. Dabei wird nichts nach Drive hochgeladen.",
       "Eine ausdrücklich reparierte Drive-Bibliothek muss auf jedem anderen Gerät vor weiteren Abgleichen bestätigt werden. Alte Löschmarkierungen und Testdaten können die Reparatur bis dahin nicht automatisch verändern; die Automatik wird pausiert.",
-      "Beim ersten Drive-Kontakt wird klar angezeigt, dass die heruntergeladene Bibliothek noch nicht übernommen wurde. Ausstehende lokale Schreibvorgänge werden vor dem Abgleich und der Wiederherstellung abgearbeitet."
+      "Beim ersten Drive-Kontakt wird klar angezeigt, dass die heruntergeladene Bibliothek noch nicht übernommen wurde. Ausstehende lokale Schreibvorgänge werden vor dem Abgleich und der Wiederherstellung abgearbeitet.",
+      "Nach der Laptop-Reparatur erscheint eine eigene Abschlussmeldung: Ein Erfolg wird erst nach vollständigem Upload, Zurücklesen und Prüfen bestätigt. Bei Fehlern erscheint eine separate Fehlermeldung. Das Ergebnis bleibt zusätzlich in den Drive-Einstellungen sichtbar."
     ]
   },
   {

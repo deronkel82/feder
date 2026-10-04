@@ -1,5 +1,6 @@
 import type { DriveSync } from './use-drive-sync';
 import { useState } from 'react';
+import { RepairOutcome, repairOutcomeTitle } from './repair-outcome';
 import { TransferStatus } from './transfer-status';
 import { imageInventory } from '../core/image-inventory';
 export function SyncPanel({ sync }: { sync: DriveSync }) {
@@ -59,6 +60,15 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
               ? 'Google-Anmeldung erneuern'
               : 'Mit Google verbinden'}
           </button>
+        )}
+        {sync.repairResult && (
+          <section
+            className="settings-info"
+            role={sync.repairResult.ok ? 'status' : 'alert'}
+          >
+            <h3>{repairOutcomeTitle(sync.repairResult)}</h3>
+            <RepairOutcome result={sync.repairResult} />
+          </section>
         )}
         {sync.account && (
           <button
