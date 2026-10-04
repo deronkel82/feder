@@ -9,6 +9,12 @@ import { readRecovery, verifyRemoteBackup } from '../src/sync/recovery.ts';
 import { replaceFromLocal } from '../src/sync/replace.ts';
 import { illustratedLibrary, jpeg } from './illustrated-fixture.ts';
 import { imageInventory } from '../src/core/image-inventory.ts';
+import {
+  readDrivePreview,
+  restoreFromDrive,
+  preserveRestoreEdits,
+  unseenRepairs,
+} from '../src/sync/restore-from-drive.ts';
 
 const noWait = async () => {};
 async function evictCache(hashes?: string[]) {
@@ -656,4 +662,185 @@ void test('acknowledged upload progress and cold download progress finish at the
   );
   assert.ok(download.length > 1);
   assert.equal(download.at(-1)!.completed, download.at(-1)!.total);
+});
+
+void test('iPhone with old checkpoint and local purge must acknowledge repair; cold restore replaces test data and preserves every image', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const good = illustratedLibrary();
+  good.projects[0].id = 'real-book';
+  good.active = 'real-book';
+  good.snapshots[0].project.id = 'real-book';
+  const repair = await replaceFromLocal(drive, good);
+  const phone = seed();
+  phone.projects[0].title = 'Nur Testdaten auf dem iPhone';
+  phone.purgedProjectIds = ['real-book'];
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: { getItem: () => null, setItem: () => {} },
+    configurable: true,
+  });
+  const storagePath = '../src/core/storage.ts?phone-restore';
+  const storage = (await import(
+    storagePath
+  )) as typeof import('../src/core/storage.ts');
+  await storage.load();
+  const key = 'sync:test:phone';
+  await storage.save(phone, { key, checkpoint: { base: phone, date: 'old' } });
+  const records = await drive.list({ recovery: true });
+  assert.deepEqual(
+    unseenRepairs(records, await storage.readSyncCheckpoint(key)),
+    [repair.id],
+  );
+  const before = structuredClone(phone);
+  api.requests.length = 0;
+  const preview = await readDrivePreview(drive);
+  assert.deepEqual(
+    (await storage.load()).library,
+    before,
+    'preview cannot change local data',
+  );
+  assert.deepEqual(preview.library, good);
+  const restored = await restoreFromDrive(
+    drive,
+    preview,
+    phone,
+    key,
+    storage.save,
+  );
+  assert.deepEqual(restored.library, good);
+  assert.deepEqual(
+    (await storage.load()).library,
+    good,
+    'real book restored despite stale local purge',
+  );
+  const checkpoint = await storage.readSyncCheckpoint(key);
+  assert.deepEqual(unseenRepairs(records, checkpoint), []);
+  assert.deepEqual(
+    (await storage.recoveryBackups()).find(
+      (backup) => backup.reason === 'Vor Synchronisierung',
+    )?.library,
+    before,
+  );
+  assert.equal(
+    api.requests.filter((request) => request.method !== 'GET').length,
+    0,
+    'no Drive upload, promotion or deletion during restore',
+  );
+  assert.deepEqual(imageInventory(restored.library), imageInventory(good));
+});
+void test('repair acknowledgement survives a newer normal head and a new repair requires confirmation again', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const library = illustratedLibrary();
+  const first = await replaceFromLocal(drive, library);
+  const changed = structuredClone(library);
+  changed.projects[0].scenes[0].text += ' Nach der Reparatur';
+  await drive.create(changed, [first.id]);
+  assert.deepEqual(
+    unseenRepairs(await drive.list({ recovery: true }), {
+      repairs: [first.id],
+    }),
+    [],
+  );
+  assert.deepEqual((await readDrivePreview(drive)).library, changed);
+  const second = await replaceFromLocal(drive, changed);
+  assert.deepEqual(
+    unseenRepairs(await drive.list({ recovery: true }), {
+      repairs: [first.id],
+    }),
+    [second.id],
+  );
+});
+void test('Drive changing after the project preview prevents local replacement', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const first = await replaceFromLocal(drive, illustratedLibrary());
+  const preview = await readDrivePreview(drive);
+  const changed = seed();
+  changed.projects[0].title = 'Another device';
+  await drive.create(changed, [first.id]);
+  let commits = 0;
+  await assert.rejects(
+    restoreFromDrive(drive, preview, seed(), 'phone', async () => {
+      commits++;
+    }),
+    /seit der Vorschau geändert/,
+  );
+  assert.equal(commits, 0);
+});
+void test('a missing image block cannot be hidden by cache when confirming iPhone restore', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  const record = await replaceFromLocal(drive, illustratedLibrary());
+  const preview = await readDrivePreview(drive);
+  const manifest = JSON.parse(api.files.get(record.id)!.text);
+  const imageId = Object.values(manifest.blocks).find((id) =>
+    api.files.get(id as string)?.text.includes(jpeg),
+  );
+  assert.ok(imageId);
+  api.files.delete(imageId as string);
+  let commits = 0;
+  await assert.rejects(
+    restoreFromDrive(drive, preview, seed(), 'phone', async () => {
+      commits++;
+    }),
+    /404/,
+  );
+  assert.equal(commits, 0);
+});
+void test('empty Drive and local edits during restore cannot commit a replacement', async (t) => {
+  const api = server();
+  t.mock.method(globalThis, 'fetch', api.fetch);
+  const drive = new Drive('test', () => {}, noWait);
+  await assert.rejects(readDrivePreview(drive), /keine aktive Feder-Sicherung/);
+  await replaceFromLocal(drive, illustratedLibrary());
+  const preview = await readDrivePreview(drive);
+  let commits = 0,
+    checks = 0;
+  await assert.rejects(
+    restoreFromDrive(
+      drive,
+      preview,
+      seed(),
+      'phone',
+      async () => {
+        commits++;
+      },
+      () => {
+        if (++checks > 1) throw Error('Local edit');
+      },
+    ),
+    /Local edit/,
+  );
+  assert.equal(commits, 0);
+});
+
+void test('an edit finishing during local commit cannot reapply stale iPhone deletions to the restored book', () => {
+  const restored = illustratedLibrary();
+  restored.projects[0].id = 'real-book';
+  restored.active = 'real-book';
+  const previous = seed();
+  previous.purgedProjectIds = ['real-book'];
+  const current = structuredClone(previous);
+  current.projects[0].scenes[0].text = 'Asynchronously completed local edit';
+  const result = preserveRestoreEdits(previous, current, restored);
+  assert.deepEqual(
+    result.projects.find((project) => project.id === 'real-book'),
+    restored.projects[0],
+  );
+  assert.ok(
+    result.projects.some(
+      (project) =>
+        project.scenes[0].text === 'Asynchronously completed local edit',
+    ),
+  );
+  assert.ok(!result.purgedProjectIds?.includes('real-book'));
+  assert.deepEqual(
+    preserveRestoreEdits(previous, previous, restored),
+    restored,
+  );
 });

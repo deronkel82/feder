@@ -226,9 +226,26 @@ function RecoveryScreen({
 function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [library, setLibrary] = useState(initial.library);
   const [saveError, setSaveError] = useState(initial.error);
-  const driveSync = useDriveSync(library, setLibrary, saveError);
   const [savedLibrary, setSavedLibrary] = useState<LibraryData | null>(null);
   const saved = savedLibrary === library;
+  const autosave = useMemo(
+    () =>
+      createAutosave<LibraryData>((value) => {
+        void save(value)
+          .then(() => {
+            setSaveError(null);
+            setSavedLibrary(value);
+          })
+          .catch((e) => setSaveError(e.message));
+      }),
+    [],
+  );
+  const driveSync = useDriveSync(
+    library,
+    setLibrary,
+    saveError,
+    autosave.flush,
+  );
   const [sideOpen, setSideOpen] = useState(true);
   const [storedView, setView] = useState('write');
   const [selectedState, setSelectedState] = useState({
@@ -358,18 +375,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
       window.removeEventListener('offline', fn);
     };
   }, []);
-  const autosave = useMemo(
-    () =>
-      createAutosave<LibraryData>((value) => {
-        void save(value)
-          .then(() => {
-            setSaveError(null);
-            setSavedLibrary(value);
-          })
-          .catch((e) => setSaveError(e.message));
-      }),
-    [],
-  );
   useEffect(() => {
     if (!initial.error) autosave.schedule(library);
   }, [library, initial.error, autosave]);
