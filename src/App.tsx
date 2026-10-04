@@ -1,5 +1,6 @@
 import { BookTools } from './modules/book-tools';
 import { RecoveryTools } from './sync/recovery-panel';
+import { RepairOutcome, repairOutcomeTitle } from './sync/repair-outcome';
 import { TransferStatus } from './sync/transfer-status';
 import { WhatsNew } from './modules/whats-new';
 import { readPosition, useWritingPosition } from './modules/writing-position';
@@ -226,9 +227,26 @@ function RecoveryScreen({
 function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
   const [library, setLibrary] = useState(initial.library);
   const [saveError, setSaveError] = useState(initial.error);
-  const driveSync = useDriveSync(library, setLibrary, saveError);
   const [savedLibrary, setSavedLibrary] = useState<LibraryData | null>(null);
   const saved = savedLibrary === library;
+  const autosave = useMemo(
+    () =>
+      createAutosave<LibraryData>((value) => {
+        void save(value)
+          .then(() => {
+            setSaveError(null);
+            setSavedLibrary(value);
+          })
+          .catch((e) => setSaveError(e.message));
+      }),
+    [],
+  );
+  const driveSync = useDriveSync(
+    library,
+    setLibrary,
+    saveError,
+    autosave.flush,
+  );
   const [sideOpen, setSideOpen] = useState(true);
   const [storedView, setView] = useState('write');
   const [selectedState, setSelectedState] = useState({
@@ -358,18 +376,6 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
       window.removeEventListener('offline', fn);
     };
   }, []);
-  const autosave = useMemo(
-    () =>
-      createAutosave<LibraryData>((value) => {
-        void save(value)
-          .then(() => {
-            setSaveError(null);
-            setSavedLibrary(value);
-          })
-          .catch((e) => setSaveError(e.message));
-      }),
-    [],
-  );
   useEffect(() => {
     if (!initial.error) autosave.schedule(library);
   }, [library, initial.error, autosave]);
@@ -1272,6 +1278,32 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
           <TransferStatus progress={driveSync.transfer} busy={driveSync.busy} />
         </DialogContent>
       </Dialog>
+      {driveSync.repairResult && (
+        <Dialog
+          open={driveSync.repairNoticeOpen && !driveSync.busy}
+          onOpenChange={(open) => {
+            if (!open) driveSync.dismissRepairNotice();
+          }}
+        >
+          <DialogContent>
+            <DialogTitle>
+              {repairOutcomeTitle(driveSync.repairResult)}
+            </DialogTitle>
+            <DialogDescription>
+              {driveSync.repairResult.ok
+                ? 'Upload und vollständige Prüfung sind abgeschlossen.'
+                : 'Dieser Versuch wurde nicht als erfolgreich bestätigt.'}
+            </DialogDescription>
+            <RepairOutcome result={driveSync.repairResult} />
+            <button
+              className="primary-button"
+              onClick={driveSync.dismissRepairNotice}
+            >
+              Verstanden
+            </button>
+          </DialogContent>
+        </Dialog>
+      )}
       <SettingsDialog
         open={settings}
         initialSection={settingsSection}

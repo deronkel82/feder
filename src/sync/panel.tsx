@@ -1,9 +1,11 @@
 import type { DriveSync } from './use-drive-sync';
 import { useState } from 'react';
+import { RepairOutcome, repairOutcomeTitle } from './repair-outcome';
 import { TransferStatus } from './transfer-status';
 import { imageInventory } from '../core/image-inventory';
 export function SyncPanel({ sync }: { sync: DriveSync }) {
   const [acknowledged, setAcknowledged] = useState(false);
+  const [restoreAcknowledged, setRestoreAcknowledged] = useState(false);
   return (
     <section className="sync-panel">
       <h2>Google Drive</h2>
@@ -59,6 +61,15 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
               : 'Mit Google verbinden'}
           </button>
         )}
+        {sync.repairResult && (
+          <section
+            className="settings-info"
+            role={sync.repairResult.ok ? 'status' : 'alert'}
+          >
+            <h3>{repairOutcomeTitle(sync.repairResult)}</h3>
+            <RepairOutcome result={sync.repairResult} />
+          </section>
+        )}
         {sync.account && (
           <button
             disabled={sync.busy || sync.connecting}
@@ -75,7 +86,10 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
           </p>
           {sync.initial ? (
             <section className="settings-info">
-              <h3>{sync.initial.projects} Projekte in Drive gefunden</h3>
+              <h3>
+                {sync.initial.projects} Projekte in Drive gefunden
+                {sync.initial.repaired ? ' · reparierte Bibliothek' : ''}
+              </h3>
               <p>
                 Bei der ersten Verbindung entscheidest du, wie die lokale
                 Bibliothek behandelt wird. Der lokale Ausgangsstand wird vor dem
@@ -84,17 +98,22 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
                 auch lokale Projekte.
               </p>
               <div className="review-options">
+                {!sync.initial.repaired && (
+                  <button
+                    disabled={sync.busy || sync.connecting}
+                    onClick={() => void sync.synchronize('merge')}
+                  >
+                    Beide Bibliotheken zusammenführen
+                  </button>
+                )}
                 <button
                   disabled={sync.busy || sync.connecting}
-                  onClick={() => void sync.synchronize('merge')}
+                  onClick={() => {
+                    setRestoreAcknowledged(false);
+                    void sync.prepareRestore();
+                  }}
                 >
-                  Beide Bibliotheken zusammenführen
-                </button>
-                <button
-                  disabled={sync.busy || sync.connecting}
-                  onClick={() => void sync.synchronize('download')}
-                >
-                  Lokale Bibliothek durch Drive ersetzen
+                  Drive-Stand prüfen und auf dieses Gerät übernehmen
                 </button>
               </div>
             </section>
@@ -116,6 +135,69 @@ export function SyncPanel({ sync }: { sync: DriveSync }) {
             />
             Automatisch bei geöffneter App synchronisieren
           </label>
+          <section className="settings-info">
+            <h3>Drive-Bibliothek auf dieses Gerät übernehmen</h3>
+            <p>
+              Für ein iPhone mit Testdaten oder einem alten Sync-Verlauf: Die
+              vollständige Drive-Bibliothek wird geprüft und nach Bestätigung
+              lokal übernommen. Der bisherige lokale Stand wird vorher als ZIP
+              und bei der Übernahme im Browserspeicher gesichert. Dabei wird
+              nichts nach Drive hochgeladen. Die Automatik wird pausiert.
+            </p>
+            {!sync.initial && (
+              <button
+                disabled={sync.busy || sync.connecting}
+                onClick={() => {
+                  setRestoreAcknowledged(false);
+                  void sync.prepareRestore();
+                }}
+              >
+                Drive-Stand prüfen und auf dieses Gerät übernehmen
+              </button>
+            )}
+            {sync.restoreReady && (
+              <>
+                <p>
+                  <strong>Geprüft, noch nicht übernommen:</strong>{' '}
+                  {sync.restoreReady.library.projects.length} Projekte ·{' '}
+                  {sync.restoreReady.library.snapshots.length} Versionen ·{' '}
+                  {imageInventory(sync.restoreReady.library).unique} Bilder
+                </p>
+                <ul>
+                  {sync.restoreReady.library.projects.map((project) => (
+                    <li key={project.id}>{project.title}</li>
+                  ))}
+                </ul>
+                <p>
+                  Wenn hier nur Testdaten stehen oder Bücher fehlen, nicht
+                  bestätigen. Prüfe das Google-Konto und den Rettungsbereich für
+                  ältere Sicherungen.
+                </p>
+                <label className="format-check">
+                  <input
+                    type="checkbox"
+                    checked={restoreAcknowledged}
+                    disabled={sync.busy}
+                    onChange={(event) =>
+                      setRestoreAcknowledged(event.target.checked)
+                    }
+                  />
+                  Die Projektliste ist richtig. Ich habe die ZIP meines
+                  bisherigen lokalen Stands gespeichert. Diese Drive-Bibliothek
+                  soll den lokalen Stand ersetzen.
+                </label>
+                <button
+                  className="primary-button"
+                  disabled={
+                    !restoreAcknowledged || sync.busy || sync.connecting
+                  }
+                  onClick={() => void sync.confirmRestore()}
+                >
+                  Geprüfte Drive-Bibliothek jetzt auf diesem Gerät übernehmen
+                </button>
+              </>
+            )}
+          </section>
           <details className="settings-info">
             <summary>
               Funktionierenden lokalen Stand als Drive-Sicherung übernehmen

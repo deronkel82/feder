@@ -9,6 +9,18 @@ import { verifyRemoteBackup } from './recovery';
 import { replaceFromLocal } from './replace';
 import type { TransferProgress } from './transfer-progress';
 import { backupBundle } from '../core/backup-bundle';
+import { imageInventory } from '../core/image-inventory';
+import {
+  readDrivePreview,
+  restoreFromDrive,
+  preserveRestoreEdits,
+  repairIds,
+  unseenRepairs,
+  type DrivePreview,
+} from './restore-from-drive';
+export type RepairResult =
+  | { ok: true; date: string; projects: number; images: number }
+  | { ok: false; message: string };
 function preference(key: string, fallback = '') {
   try {
     return localStorage.getItem(key) || fallback;
@@ -20,6 +32,7 @@ export function useDriveSync(
   library: Library,
   setLibrary: React.Dispatch<React.SetStateAction<Library>>,
   saveError: string | null,
+  flushLocalSaves: () => void = () => {},
 ) {
   const [clientId, setClient] = useState(
     () => GOOGLE_CLIENT_ID || preference('feder.sync.client'),
@@ -32,11 +45,18 @@ export function useDriveSync(
   const [automatic, setAutomatic] = useState(
     () => preference('feder.sync.auto') === 'true',
   );
+  const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
+  const [repairNoticeOpen, setRepairNoticeOpen] = useState(false);
   const [transfer, setTransfer] = useState<TransferProgress | null>(null);
   const [replacementReady, setReplacementReady] = useState<Library | null>(
     null,
   );
   const replacement = useRef<Library | null>(null);
+  const [restoreReady, setRestoreReady] = useState<{
+    preview: DrivePreview;
+    local: Library;
+    key: string;
+  } | null>(null);
   const [syncedLibrary, setSyncedLibrary] = useState<Library | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [expires, setExpires] = useState(0);
@@ -53,7 +73,10 @@ export function useDriveSync(
     };
   }, []);
   const [attention, setAttention] = useState(false);
-  const [initial, setInitial] = useState<{ projects: number } | null>(null),
+  const [initial, setInitial] = useState<{
+      projects: number;
+      repaired?: boolean;
+    } | null>(null),
     [lastSync, setLastSync] = useState('');
   const session = useRef<{
       token: string;
@@ -70,6 +93,7 @@ export function useDriveSync(
     if (running.current) return;
     setClient(value);
     session.current = null;
+    setRestoreReady(null);
     setAccount('');
     setSyncedLibrary(null);
     setExpires(0);
@@ -102,6 +126,7 @@ export function useDriveSync(
         ...auth,
         key: 'sync:' + clientId.trim() + ':' + user.permissionId,
       };
+      setRestoreReady(null);
       setExpires(auth.expires);
       setSyncedLibrary(null);
       setLastSync('');
@@ -118,6 +143,14 @@ export function useDriveSync(
       setConnecting(false);
     }
   }
+  const auto = useCallback((value: boolean) => {
+    setAutomatic(value);
+    try {
+      localStorage.setItem('feder.sync.auto', String(value));
+    } catch {
+      /* device setting */
+    }
+  }, []);
   async function prepareReplacement() {
     if (running.current || saveError) return;
     running.current = true;
@@ -126,6 +159,8 @@ export function useDriveSync(
     setMessage('Komplette Sicherung mit Bilddateien vorbereiten …');
     replacement.current = null;
     setReplacementReady(null);
+    setRepairResult(null);
+    setRepairNoticeOpen(false);
     try {
       const local = latest.current;
       const checked = validateLibrary(local);
@@ -148,8 +183,97 @@ export function useDriveSync(
       setBusy(false);
     }
   }
+  async function prepareRestore() {
+    const auth = session.current;
+    if (running.current || saveError) return;
+    auto(false);
+    setRestoreReady(null);
+    if (!auth || auth.expires < Date.now() + 10000) {
+      setMessage('Bitte die Google-Anmeldung erneuern.');
+      return;
+    }
+    running.current = true;
+    setBusy(true);
+    setTransfer(null);
+    setMessage(
+      'Drive-Sicherung vollständig prüfen. Der lokale Stand bleibt bis zur Bestätigung erhalten …',
+    );
+    try {
+      const local = latest.current;
+      flushLocalSaves();
+      await save(local);
+      const preview = await readDrivePreview(
+        new Drive(auth.token, setMessage, undefined, setTransfer),
+      );
+      const bundle = await backupBundle(local);
+      if (latest.current !== local)
+        throw Error('Lokale Änderungen. Bitte die Prüfung erneut starten.');
+      download(bundle, 'Feder-vor-Drive-Uebernahme.zip', 'application/zip');
+      setRestoreReady({ preview, local, key: auth.key });
+      setMessage(
+        'Drive-Sicherung geprüft, aber noch nicht übernommen. Prüfe die Projektliste unten und speichere die ZIP des bisherigen lokalen Stands. Danach die Übernahme ausdrücklich bestätigen.',
+      );
+    } catch (error) {
+      setAttention(true);
+      setMessage((error as Error).message);
+    } finally {
+      running.current = false;
+      setBusy(false);
+    }
+  }
+  async function confirmRestore() {
+    const auth = session.current,
+      prepared = restoreReady;
+    if (running.current || saveError || !prepared) return;
+    if (
+      !auth ||
+      auth.key !== prepared.key ||
+      auth.expires < Date.now() + 10000
+    ) {
+      setMessage('Bitte erneut anmelden und die Drive-Sicherung prüfen.');
+      return;
+    }
+    running.current = true;
+    setBusy(true);
+    setTransfer(null);
+    setMessage('Geprüfte Drive-Bibliothek auf dieses Gerät übernehmen …');
+    try {
+      const unchanged = () => {
+        if (latest.current !== prepared.local)
+          throw Error(
+            'Die lokale Bibliothek wurde geändert. Bitte erneut prüfen.',
+          );
+      };
+      flushLocalSaves();
+      const restored = await restoreFromDrive(
+        new Drive(auth.token, setMessage, undefined, setTransfer),
+        prepared.preview,
+        prepared.local,
+        auth.key,
+        save,
+        unchanged,
+      );
+      setLibrary((current) =>
+        preserveRestoreEdits(prepared.local, current, restored.library),
+      );
+      setSyncedLibrary(restored.library);
+      setLastSync(restored.date);
+      setInitial(null);
+      setRestoreReady(null);
+      setAttention(false);
+      setMessage(
+        `Drive-Bibliothek erfolgreich auf diesem Gerät übernommen: ${restored.library.projects.length} Projekte. Cover, Figurenbilder und Versionen sind enthalten. Der vorherige lokale Stand ist gesichert. Es wurde nichts nach Drive hochgeladen. Die Automatik bleibt ausgeschaltet.`,
+      );
+    } catch (error) {
+      setAttention(true);
+      setMessage((error as Error).message);
+    } finally {
+      running.current = false;
+      setBusy(false);
+    }
+  }
   const synchronize = useCallback(
-    async (mode: 'merge' | 'download' | 'automatic' | 'replace' = 'merge') => {
+    async (mode: 'merge' | 'automatic' | 'replace' = 'merge') => {
       const auth = session.current;
       if (running.current) return;
       if (saveError) {
@@ -175,8 +299,14 @@ export function useDriveSync(
       setBusy(true);
       setTransfer(null);
       setMessage('Bibliotheken werden abgeglichen …');
+      if (mode === 'replace') {
+        setRepairResult(null);
+        setRepairNoticeOpen(false);
+      }
       try {
         const local = latest.current;
+        flushLocalSaves();
+        await save(local);
         const drive = new Drive(auth.token, setMessage, undefined, setTransfer);
         if (mode === 'replace') {
           if (replacement.current !== local)
@@ -189,15 +319,21 @@ export function useDriveSync(
                 'Lokale Änderungen während der Sicherung. Es wird kein veralteter Stand als vollständig abgeglichen bestätigt. Bitte erneut versuchen.',
               );
           };
-          await save(local);
           unchanged();
           const record = await replaceFromLocal(drive, local, unchanged);
           unchanged();
           const date = record.date;
           await save(local, {
             key: auth.key,
-            checkpoint: { base: local, date },
+            checkpoint: { base: local, date, repairs: [record.id] },
           });
+          setRepairResult({
+            ok: true,
+            date,
+            projects: local.projects.length,
+            images: imageInventory(local).unique,
+          });
+          setRepairNoticeOpen(true);
           setSyncedLibrary(local);
           setLastSync(date);
           setAttention(false);
@@ -220,10 +356,13 @@ export function useDriveSync(
           throw Error(
             'Sehr viele parallele Syncstände. Bitte zuerst die Drive-Daten sichern und prüfen.',
           );
+        const unacknowledgedRepair = unseenRepairs(observed, raw).length > 0;
         let remote: Library | null = null;
         const conflicts: string[] = [];
         for (const head of heads) {
-          const contents = await drive.read(head);
+          const contents = await drive.read(head, {
+            cache: !unacknowledgedRepair,
+          });
           if (!remote) remote = contents;
           else {
             const merged = mergeLibraries(null, remote, contents);
@@ -231,12 +370,21 @@ export function useDriveSync(
             conflicts.push(...merged.conflicts);
           }
         }
+        if (remote && unacknowledgedRepair) {
+          auto(false);
+          setAttention(true);
+          setInitial({ projects: remote.projects.length, repaired: true });
+          setMessage(
+            'Drive enthält eine ausdrücklich reparierte Bibliothek. Dieser alte Gerätestand darf sie nicht automatisch verändern. Bitte „Drive-Stand prüfen und auf dieses Gerät übernehmen“ wählen. Es wurde nichts hochgeladen.',
+          );
+          return;
+        }
         // First contact always asks before bringing another device's library into the workspace.
         if (remote && !base && !initial) {
           setAttention(true);
           setInitial({ projects: remote.projects.length });
           setMessage(
-            'In Drive liegt bereits eine Bibliothek. Bitte unten auswählen, wie sie übernommen werden soll.',
+            'Drive wurde gelesen, aber noch nicht übernommen. Bitte unten auswählen: Drive-Stand prüfen und übernehmen oder beide Bibliotheken zusammenführen.',
           );
           return;
         }
@@ -246,18 +394,9 @@ export function useDriveSync(
         }
         let result = local;
         if (remote) {
-          if (mode === 'download' && !base)
-            result = {
-              ...remote,
-              active: remote.projects.some((p) => p.id === local.active)
-                ? local.active
-                : remote.active,
-            };
-          else {
-            const merged = mergeLibraries(base, local, remote);
-            result = merged.library;
-            conflicts.push(...merged.conflicts);
-          }
+          const merged = mergeLibraries(base, local, remote);
+          result = merged.library;
+          conflicts.push(...merged.conflicts);
         }
         const unchanged = () => {
           if (latest.current !== local)
@@ -295,9 +434,10 @@ export function useDriveSync(
         }
         const date = new Date().toISOString();
         setMessage('Abgeglichenen Stand lokal sichern …');
+        flushLocalSaves();
         await save(result, {
           key: auth.key,
-          checkpoint: { base: result, date },
+          checkpoint: { base: result, date, repairs: repairIds(observed) },
           previous: syncEqual(result, local) ? undefined : local,
         });
         // Preserve edits completing asynchronously while the IndexedDB transaction commits.
@@ -338,6 +478,10 @@ export function useDriveSync(
               : ''),
         );
       } catch (e) {
+        if (mode === 'replace') {
+          setRepairResult({ ok: false, message: (e as Error).message });
+          setRepairNoticeOpen(true);
+        }
         setAttention(true);
         setMessage((e as Error).message);
       } finally {
@@ -345,7 +489,7 @@ export function useDriveSync(
         setBusy(false);
       }
     },
-    [saveError, setLibrary, initial],
+    [saveError, setLibrary, initial, flushLocalSaves, auto],
   );
   useEffect(() => {
     if (!automatic || !account) return;
@@ -370,17 +514,10 @@ export function useDriveSync(
       window.removeEventListener('pointerdown', touched);
     };
   }, []);
-  function auto(value: boolean) {
-    setAutomatic(value);
-    try {
-      localStorage.setItem('feder.sync.auto', String(value));
-    } catch {
-      /* device setting */
-    }
-  }
   function disconnect() {
     if (running.current) return;
     session.current = null;
+    setRestoreReady(null);
     setAccount('');
     setSyncedLibrary(null);
     setExpires(0);
@@ -424,7 +561,13 @@ export function useDriveSync(
     account,
     automatic,
     transfer,
+    repairResult,
+    repairNoticeOpen,
+    dismissRepairNotice: () => setRepairNoticeOpen(false),
     prepareReplacement,
+    prepareRestore,
+    confirmRestore,
+    restoreReady: restoreReady?.local === library ? restoreReady.preview : null,
     replacementReady: replacementReady === library ? replacementReady : null,
     auto,
     initial,
