@@ -576,11 +576,15 @@ export async function rawBackup() {
   }
 }
 export function download(
-  text: string,
+  text: string | Uint8Array,
   name: string,
   type = 'application/json',
 ) {
-  const u = URL.createObjectURL(new Blob([text], { type }));
+  const u = URL.createObjectURL(
+    new Blob([typeof text === 'string' ? text : new Uint8Array(text).buffer], {
+      type,
+    }),
+  );
   const a = document.createElement('a');
   a.href = u;
   a.download = name;

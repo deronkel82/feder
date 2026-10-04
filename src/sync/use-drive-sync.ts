@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { validateLibrary, type Library } from '../core/model';
-import { save, readSyncCheckpoint } from '../core/storage';
-import { Drive, remoteHeads } from './drive';
+import { save, readSyncCheckpoint, download } from '../core/storage';
+import { Drive, remoteHeads, activeRecords } from './drive';
 import { authorize, loadGoogle } from './google';
 import { mergeLibraries, syncEqual } from './merge';
 import { GOOGLE_CLIENT_ID } from './config';
 import { verifyRemoteBackup } from './recovery';
+import { replaceFromLocal } from './replace';
+import type { TransferProgress } from './transfer-progress';
+import { backupBundle } from '../core/backup-bundle';
 function preference(key: string, fallback = '') {
   try {
     return localStorage.getItem(key) || fallback;
@@ -29,6 +32,11 @@ export function useDriveSync(
   const [automatic, setAutomatic] = useState(
     () => preference('feder.sync.auto') === 'true',
   );
+  const [transfer, setTransfer] = useState<TransferProgress | null>(null);
+  const [replacementReady, setReplacementReady] = useState<Library | null>(
+    null,
+  );
+  const replacement = useRef<Library | null>(null);
   const [syncedLibrary, setSyncedLibrary] = useState<Library | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [expires, setExpires] = useState(0);
@@ -110,8 +118,38 @@ export function useDriveSync(
       setConnecting(false);
     }
   }
+  async function prepareReplacement() {
+    if (running.current || saveError) return;
+    running.current = true;
+    setBusy(true);
+    setTransfer(null);
+    setMessage('Komplette Sicherung mit Bilddateien vorbereiten …');
+    replacement.current = null;
+    setReplacementReady(null);
+    try {
+      const local = latest.current;
+      const checked = validateLibrary(local);
+      auto(false);
+      const bundle = await backupBundle(checked);
+      if (latest.current !== local)
+        throw Error(
+          'Die Bibliothek wurde geändert. Bitte die Sicherung erneut herunterladen.',
+        );
+      download(bundle, 'Feder-vor-Drive-Reparatur.zip', 'application/zip');
+      replacement.current = local;
+      setReplacementReady(local);
+      setMessage(
+        'Lokale Sicherung zum Download bereitgestellt. Prüfe die Datei und schließe Feder auf allen anderen Geräten, bevor du diesen Stand als Drive-Sicherung übernimmst.',
+      );
+    } catch (error) {
+      setMessage((error as Error).message);
+    } finally {
+      running.current = false;
+      setBusy(false);
+    }
+  }
   const synchronize = useCallback(
-    async (mode: 'merge' | 'download' | 'automatic' = 'merge') => {
+    async (mode: 'merge' | 'download' | 'automatic' | 'replace' = 'merge') => {
       const auth = session.current;
       if (running.current) return;
       if (saveError) {
@@ -135,15 +173,48 @@ export function useDriveSync(
       }
       running.current = true;
       setBusy(true);
+      setTransfer(null);
       setMessage('Bibliotheken werden abgeglichen …');
       try {
         const local = latest.current;
-        const drive = new Drive(auth.token, setMessage);
+        const drive = new Drive(auth.token, setMessage, undefined, setTransfer);
+        if (mode === 'replace') {
+          if (replacement.current !== local)
+            throw Error(
+              'Die lokale Bibliothek wurde seit der Sicherung geändert. Bitte zuerst erneut die komplette Sicherung herunterladen.',
+            );
+          const unchanged = () => {
+            if (latest.current !== local)
+              throw Error(
+                'Lokale Änderungen während der Sicherung. Es wird kein veralteter Stand als vollständig abgeglichen bestätigt. Bitte erneut versuchen.',
+              );
+          };
+          await save(local);
+          unchanged();
+          const record = await replaceFromLocal(drive, local, unchanged);
+          unchanged();
+          const date = record.date;
+          await save(local, {
+            key: auth.key,
+            checkpoint: { base: local, date },
+          });
+          setSyncedLibrary(local);
+          setLastSync(date);
+          setAttention(false);
+          setInitial(null);
+          setReplacementReady(null);
+          replacement.current = null;
+          setMessage(
+            'Dieser lokale Stand ist vollständig aus Drive zurückgelesen und geprüft worden und gilt jetzt als maßgebliche Sicherung. Deine lokale Bibliothek bleibt erhalten. Ältere Drive-Stände bleiben im Rettungsbereich verfügbar.',
+          );
+          return;
+        }
         const raw = (await readSyncCheckpoint(auth.key)) as
           | { base?: unknown; date?: string }
           | undefined;
         const base = raw?.base ? validateLibrary(raw.base) : null;
-        const records = await drive.list(),
+        const observed = await drive.list({ recovery: true });
+        const records = activeRecords(observed),
           heads = remoteHeads(records);
         if (heads.length > 20)
           throw Error(
@@ -246,7 +317,7 @@ export function useDriveSync(
           const permanentPurge = (result.purgedProjectIds || []).some(
             (id) => !(base?.purgedProjectIds || []).includes(id),
           );
-          for (const record of records.filter(
+          for (const record of observed.filter(
             () => permanentPurge && !!uploaded,
           )) {
             try {
@@ -352,6 +423,9 @@ export function useDriveSync(
     message,
     account,
     automatic,
+    transfer,
+    prepareReplacement,
+    replacementReady: replacementReady === library ? replacementReady : null,
     auto,
     initial,
     lastSync,

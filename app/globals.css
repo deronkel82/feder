@@ -1598,6 +1598,20 @@ small,
   display: grid;
   gap: 8px;
 }
+.transfer-status {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.transfer-status progress {
+  width: 100%;
+  accent-color: var(--primary);
+}
+.transfer-status small {
+  color: var(--muted-foreground);
+}
 .scene-button,
 .module-nav button,
 .footer-button {

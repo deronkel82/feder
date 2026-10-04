@@ -47,6 +47,7 @@ import {
 import { download, rawBackup, recoveryBackups } from '../core/storage';
 import { SeriesFields } from './series';
 import { RecoveryTools } from '../sync/recovery-panel';
+import { backupBundle } from '../core/backup-bundle';
 import { Versions } from './versions';
 export function ProjectDialog({
   open,
@@ -495,6 +496,25 @@ export function ProjectDialog({
           </button>
         ))}
         {message && <output className="dialog-message">{message}</output>}
+        <button
+          className="text-button"
+          onClick={async () => {
+            try {
+              download(
+                await backupBundle(library),
+                'Feder-Sicherung-mit-Bildern.zip',
+                'application/zip',
+              );
+              setMessage(
+                'Komplette Sicherung einschließlich Bilddateien zum Download bereitgestellt.',
+              );
+            } catch (problem) {
+              setMessage((problem as Error).message);
+            }
+          }}
+        >
+          Komplette ZIP-Sicherung mit Bilddateien herunterladen
+        </button>
         <RecoveryTools />
       </DialogContent>
     </Dialog>

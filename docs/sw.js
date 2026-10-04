@@ -1,6 +1,6 @@
 /* Build replaces the following two placeholders. App data lives only in IndexedDB. */
-const VERSION = "feder-154c5437103d";
-const ASSETS = ["./OPENTHESAURUS-LICENSE.txt","./THIRD-PARTY-LICENSES.txt","./favicon.svg","./icon-192.png","./icon-512.png","./index.html","./license-manifest.json","./licenses.html","./manifest.webmanifest","./privacy.html","./thesaurus.json","./assets/analysis.worker-CUA09s_I.js","./assets/entities.worker-DQyLD1OO.js","./assets/index-BFLQo1_W.js","./assets/index-D0_L_M9u.css","./assets/thesaurus.worker-DOSuw8dC.js"];
+const VERSION = "feder-a34e1dd1ebc4";
+const ASSETS = ["./OPENTHESAURUS-LICENSE.txt","./THIRD-PARTY-LICENSES.txt","./favicon.svg","./icon-192.png","./icon-512.png","./index.html","./license-manifest.json","./licenses.html","./manifest.webmanifest","./privacy.html","./thesaurus.json","./assets/analysis.worker-CUA09s_I.js","./assets/entities.worker-DQyLD1OO.js","./assets/index-0z65pyrE.css","./assets/index-CkNwHhYF.js","./assets/thesaurus.worker-DOSuw8dC.js"];
 const PREFIX = 'feder:' + self.registration.scope + ':';
 const CACHE = PREFIX + VERSION;
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));

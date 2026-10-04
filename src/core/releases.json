@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.16.2",
+    "date": "2026-10-04",
+    "title": "Drive-Sicherung reparieren und Bilder vollständig sichern",
+    "changes": [
+      "Ein funktionierender lokaler Bestand kann nach einer vollständigen ZIP-Sicherung ausdrücklich als maßgebliche Drive-Sicherung übernommen werden. Alle Daten werden frisch hochgeladen und vor der Freigabe vollständig aus Drive zurückgelesen und geprüft. Ältere Sicherungen bleiben für Rettungsversuche erhalten.",
+      "ZIP-Sicherungen enthalten die vollständige Bibliothek und Cover sowie Figurenbilder zusätzlich als Bilddateien, einschließlich Bildern aus Versionen, Romanwelten und Vorlagen. Die gespeicherten Bildfassungen bleiben erhalten; ursprüngliche Fotos vor Beschnitt oder Verkleinerung speichert Feder nicht.",
+      "Fortschritt und geschätzte Restdauer werden für Upload, Download und vollständige Sicherungsprüfung angezeigt. Die Schätzung wird aus dem gemessenen Fortschritt ermittelt und bei jedem Schritt neu berechnet."
+    ]
+  },
+  {
     "version": "0.16.1",
     "date": "2026-10-03",
     "title": "Lokale Daten und Google-Drive-Sicherungen retten",

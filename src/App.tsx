@@ -1,5 +1,6 @@
 import { BookTools } from './modules/book-tools';
 import { RecoveryTools } from './sync/recovery-panel';
+import { TransferStatus } from './sync/transfer-status';
 import { WhatsNew } from './modules/whats-new';
 import { readPosition, useWritingPosition } from './modules/writing-position';
 import { SyncStatus } from './sync/status';
@@ -1268,6 +1269,7 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             lassen.
           </DialogDescription>
           <p aria-live="polite">{driveSync.message}</p>
+          <TransferStatus progress={driveSync.transfer} busy={driveSync.busy} />
         </DialogContent>
       </Dialog>
       <SettingsDialog
