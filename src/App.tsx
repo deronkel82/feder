@@ -1275,7 +1275,38 @@ function Workspace({ initial }: { initial: Awaited<ReturnType<typeof load>> }) {
             lassen.
           </DialogDescription>
           <p aria-live="polite">{driveSync.message}</p>
-          <TransferStatus progress={driveSync.transfer} busy={driveSync.busy} />
+          {driveSync.authorizationPaused ? (
+            <div>
+              <p>
+                <strong>Übertragung pausiert – Google-Zugang erneuern</strong>
+              </p>
+              <p>
+                Die bestätigten Daten bleiben erhalten. Wähle dasselbe
+                Google-Konto. Danach läuft dieser Vorgang weiter, einschließlich
+                der vollständigen Prüfung. Bitte Feder geöffnet lassen.
+              </p>
+              <button
+                className="primary-button"
+                disabled={driveSync.renewingAccess}
+                onClick={() => void driveSync.renewTransferAccess()}
+              >
+                {driveSync.renewingAccess
+                  ? 'Google-Anmeldung läuft …'
+                  : 'Google-Zugang erneuern und fortsetzen'}
+              </button>
+              <button
+                disabled={driveSync.renewingAccess}
+                onClick={driveSync.cancelAuthorizationPause}
+              >
+                Vorgang anhalten
+              </button>
+            </div>
+          ) : (
+            <TransferStatus
+              progress={driveSync.transfer}
+              busy={driveSync.busy}
+            />
+          )}
         </DialogContent>
       </Dialog>
       {driveSync.repairResult && (

@@ -46,3 +46,26 @@ void test('unknown transfer size remains indeterminate and duration labels make 
   assert.equal(durationLabel(8), 'ca. 10 Sekunden');
   assert.equal(durationLabel(75), 'ca. 2 Minuten');
 });
+
+void test('time spent renewing Google access does not inflate the remaining transfer estimate', () => {
+  let clock = 0;
+  let latest: TransferProgress | undefined;
+  const transfer = createTransferProgress(
+    (value) => {
+      latest = value;
+    },
+    () => clock,
+  );
+  transfer.begin('Upload', 1000, 'bytes');
+  clock = 2000;
+  transfer.update(250);
+  assert.equal(latest!.remainingSeconds, 6);
+  transfer.pause();
+  clock += 120000;
+  transfer.resume();
+  assert.equal(latest!.elapsedSeconds, 2);
+  assert.equal(remainingTime(latest!, clock), 6);
+  clock += 2000;
+  transfer.update(500);
+  assert.equal(latest!.remainingSeconds, 4);
+});

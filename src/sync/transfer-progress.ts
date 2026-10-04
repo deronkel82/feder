@@ -12,9 +12,13 @@ export function createTransferProgress(
   now = () => Date.now(),
 ) {
   let value: TransferProgress | null = null;
+  let pausedAt: number | null = null;
   function emit() {
     if (!value) return;
-    const elapsedSeconds = Math.max(0, (now() - value.startedAt) / 1000);
+    const elapsedSeconds = Math.max(
+      0,
+      ((pausedAt ?? now()) - value.startedAt) / 1000,
+    );
     const { completed, total } = value;
     value = {
       ...value,
@@ -30,6 +34,7 @@ export function createTransferProgress(
   }
   return {
     begin(phase: string, total: number | null, unit: TransferProgress['unit']) {
+      pausedAt = null;
       value = {
         phase,
         completed: 0,
@@ -47,6 +52,15 @@ export function createTransferProgress(
         value.completed,
         Math.min(completed, value.total ?? completed),
       );
+      emit();
+    },
+    pause() {
+      if (pausedAt === null) pausedAt = now();
+    },
+    resume() {
+      if (pausedAt === null) return;
+      if (value) value.startedAt += now() - pausedAt;
+      pausedAt = null;
       emit();
     },
     finish() {

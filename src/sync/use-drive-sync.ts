@@ -45,6 +45,13 @@ export function useDriveSync(
   const [automatic, setAutomatic] = useState(
     () => preference('feder.sync.auto') === 'true',
   );
+  const [authorizationPaused, setAuthorizationPaused] = useState(false);
+  const [renewingAccess, setRenewingAccess] = useState(false);
+  const authorizationWaiter = useRef<{
+    key: string;
+    resolve: (token: string) => void;
+    reject: (error: Error) => void;
+  } | null>(null);
   const [repairResult, setRepairResult] = useState<RepairResult | null>(null);
   const [repairNoticeOpen, setRepairNoticeOpen] = useState(false);
   const [transfer, setTransfer] = useState<TransferProgress | null>(null);
@@ -143,6 +150,64 @@ export function useDriveSync(
       setConnecting(false);
     }
   }
+  const pauseForAuthorization = useCallback(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const auth = session.current;
+        if (!auth) {
+          reject(Error('Die Google-Verbindung fehlt.'));
+          return;
+        }
+        authorizationWaiter.current = { key: auth.key, resolve, reject };
+        setAuthorizationPaused(true);
+        setExpires(0);
+        setMessage(
+          'Google-Zugang abgelaufen. Die Übertragung ist pausiert. Bereits bestätigte Daten bleiben erhalten. Bitte den Zugang erneuern und hier fortsetzen; Feder nicht schließen.',
+        );
+      }),
+    [],
+  );
+  async function renewTransferAccess() {
+    const waiter = authorizationWaiter.current;
+    if (!waiter || renewingAccess) return;
+    setRenewingAccess(true);
+    try {
+      // Called by a button so Google's popup has a genuine user gesture.
+      const auth = await authorize(clientId.trim());
+      const user = await new Drive(auth.token).account();
+      const key = 'sync:' + clientId.trim() + ':' + user.permissionId;
+      if (key !== waiter.key)
+        throw Error(
+          'Bitte dasselbe Google-Konto wie zu Beginn der Übertragung wählen. Mit einem anderen Konto wird nicht fortgesetzt.',
+        );
+      if (authorizationWaiter.current !== waiter) return;
+      session.current = { ...auth, key };
+      setExpires(auth.expires);
+      authorizationWaiter.current = null;
+      setAuthorizationPaused(false);
+      setMessage(
+        'Google-Zugang erneuert. Übertragung wird an der bisherigen Stelle fortgesetzt …',
+      );
+      waiter.resolve(auth.token);
+    } catch (error) {
+      setMessage(
+        (error as Error).message +
+          ' Die Übertragung bleibt pausiert. Du kannst die Anmeldung erneut versuchen.',
+      );
+    } finally {
+      setRenewingAccess(false);
+    }
+  }
+  function cancelAuthorizationPause() {
+    const waiter = authorizationWaiter.current;
+    authorizationWaiter.current = null;
+    setAuthorizationPaused(false);
+    waiter?.reject(
+      Error(
+        'Übertragung auf deinen Wunsch angehalten. Es gibt keine Erfolgsbestätigung. Lokale Daten und bestätigte Drive-Blöcke bleiben erhalten.',
+      ),
+    );
+  }
   const auto = useCallback((value: boolean) => {
     setAutomatic(value);
     try {
@@ -203,7 +268,13 @@ export function useDriveSync(
       flushLocalSaves();
       await save(local);
       const preview = await readDrivePreview(
-        new Drive(auth.token, setMessage, undefined, setTransfer),
+        new Drive(
+          auth.token,
+          setMessage,
+          undefined,
+          setTransfer,
+          pauseForAuthorization,
+        ),
       );
       const bundle = await backupBundle(local);
       if (latest.current !== local)
@@ -246,7 +317,13 @@ export function useDriveSync(
       };
       flushLocalSaves();
       const restored = await restoreFromDrive(
-        new Drive(auth.token, setMessage, undefined, setTransfer),
+        new Drive(
+          auth.token,
+          setMessage,
+          undefined,
+          setTransfer,
+          pauseForAuthorization,
+        ),
         prepared.preview,
         prepared.local,
         auth.key,
@@ -307,7 +384,13 @@ export function useDriveSync(
         const local = latest.current;
         flushLocalSaves();
         await save(local);
-        const drive = new Drive(auth.token, setMessage, undefined, setTransfer);
+        const drive = new Drive(
+          auth.token,
+          setMessage,
+          undefined,
+          setTransfer,
+          pauseForAuthorization,
+        );
         if (mode === 'replace') {
           if (replacement.current !== local)
             throw Error(
@@ -489,7 +572,14 @@ export function useDriveSync(
         setBusy(false);
       }
     },
-    [saveError, setLibrary, initial, flushLocalSaves, auto],
+    [
+      saveError,
+      setLibrary,
+      initial,
+      flushLocalSaves,
+      auto,
+      pauseForAuthorization,
+    ],
   );
   useEffect(() => {
     if (!automatic || !account) return;
@@ -561,6 +651,10 @@ export function useDriveSync(
     account,
     automatic,
     transfer,
+    authorizationPaused,
+    renewingAccess,
+    renewTransferAccess,
+    cancelAuthorizationPause,
     repairResult,
     repairNoticeOpen,
     dismissRepairNotice: () => setRepairNoticeOpen(false),

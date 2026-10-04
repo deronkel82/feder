@@ -49,6 +49,8 @@ export class Drive {
   private known = new Map<string, string>();
   private progress: (message: string) => void;
   private pause: (ms: number) => Promise<void>;
+  private renew?: () => Promise<string>;
+  private renewing?: Promise<void>;
   private transfer: ReturnType<typeof createTransferProgress>;
   constructor(
     token: string,
@@ -56,8 +58,10 @@ export class Drive {
     pause = (ms: number) =>
       new Promise<void>((resolve) => setTimeout(resolve, ms)),
     transfer: (value: TransferProgress) => void = () => {},
+    renew?: () => Promise<string>,
   ) {
     this.token = token;
+    this.renew = renew;
     this.progress = progress;
     this.pause = pause;
     this.transfer = createTransferProgress(transfer);
@@ -65,38 +69,68 @@ export class Drive {
   async request(url: string, init: RequestInit = {}, resume = false) {
     if (new URL(url).origin !== 'https://www.googleapis.com')
       throw Error('Ungültige Drive-Adresse.');
-    const headers = new Headers(init.headers);
-    headers.set('Authorization', 'Bearer ' + this.token);
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        ...init,
-        headers,
-        signal: AbortSignal.timeout(300000),
-        cache: 'no-store',
-      });
-    } catch (error) {
-      throw networkError(error);
-    }
-    if (!response.ok && !(resume && response.status === 308)) {
-      if (response.status === 401)
+    for (let authorizationAttempt = 0; ; authorizationAttempt++) {
+      const usedToken = this.token;
+      const headers = new Headers(init.headers);
+      headers.set('Authorization', 'Bearer ' + usedToken);
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          ...init,
+          headers,
+          signal: AbortSignal.timeout(300000),
+          cache: 'no-store',
+        });
+      } catch (error) {
+        throw networkError(error);
+      }
+      if (response.status === 401 && this.renew && authorizationAttempt === 0) {
+        // Keep the current block, resumable upload URL and acknowledged offset.
+        // Concurrent/stale 401 responses share one account-checked renewal.
+        if (this.token === usedToken) {
+          if (!this.renewing) {
+            const renew = this.renew;
+            this.transfer.pause();
+            this.renewing = (async () => {
+              try {
+                const token = await renew();
+                if (!token)
+                  throw Error('Google-Anmeldung wurde nicht erneuert.');
+                this.token = token;
+              } finally {
+                this.transfer.resume();
+              }
+            })();
+          }
+          const renewal = this.renewing;
+          try {
+            await renewal;
+          } finally {
+            if (this.renewing === renewal) this.renewing = undefined;
+          }
+        }
+        continue;
+      }
+      if (!response.ok && !(resume && response.status === 308)) {
+        if (response.status === 401)
+          throw new TransferError(
+            'Google-Anmeldung abgelaufen. Bitte erneut verbinden.',
+            false,
+          );
+        if (response.status === 403)
+          throw new TransferError(
+            'Drive-Zugriff abgelehnt. API-Aktivierung, Freigabe und Speicherplatz prüfen.',
+            false,
+          );
         throw new TransferError(
-          'Google-Anmeldung abgelaufen. Bitte erneut verbinden.',
-          false,
+          'Google Drive antwortet mit Fehler ' +
+            response.status +
+            '. Bitte erneut synchronisieren.',
+          response.status === 429 || response.status >= 500,
         );
-      if (response.status === 403)
-        throw new TransferError(
-          'Drive-Zugriff abgelehnt. API-Aktivierung, Freigabe und Speicherplatz prüfen.',
-          false,
-        );
-      throw new TransferError(
-        'Google Drive antwortet mit Fehler ' +
-          response.status +
-          '. Bitte erneut synchronisieren.',
-        response.status === 429 || response.status >= 500,
-      );
+      }
+      return response;
     }
-    return response;
   }
   async json(url: string, limit = MAX_SYNC_BYTES): Promise<unknown> {
     for (let attempt = 0; ; attempt++) {

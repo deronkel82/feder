@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.16.4",
+    "date": "2026-10-04",
+    "title": "Lange Drive-Übertragungen nach erneuter Anmeldung fortsetzen",
+    "changes": [
+      "Läuft der Google-Zugang während eines Uploads oder einer vollständigen Drive-Prüfung ab, pausiert Feder den laufenden Vorgang. Über „Google-Zugang erneuern und fortsetzen“ kann dasselbe Google-Konto erneut freigegeben werden; bestätigte Blöcke und die Position des laufenden Uploads bleiben erhalten.",
+      "Ein anderes Google-Konto wird für die Fortsetzung abgewiesen. Ein abgebrochenes oder blockiertes Anmeldefenster lässt den Vorgang pausiert und erlaubt einen weiteren Versuch. Die Übertragung kann ausdrücklich angehalten werden; ungeprüfte Reparaturstände werden dabei nicht freigegeben.",
+      "Die Wartezeit für die erneute Anmeldung wird nicht in die geschätzte Übertragungsdauer eingerechnet. Die Erfolgsbestätigung erscheint weiterhin erst nach vollständigem Upload und Prüfung."
+    ]
+  },
+  {
     "version": "0.16.3",
     "date": "2026-10-04",
     "title": "Reparierte Drive-Bibliothek sicher auf andere Geräte übernehmen",
