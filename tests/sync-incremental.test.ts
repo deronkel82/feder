@@ -844,3 +844,204 @@ void test('an edit finishing during local commit cannot reapply stale iPhone del
     restored,
   );
 });
+
+void test('expired access during resumable upload pauses and continues the same session from the acknowledged byte offset', async (t) => {
+  const api = server();
+  let validToken = 'old',
+    expired = false,
+    renewals = 0;
+  let release: ((token: string) => void) | undefined;
+  let paused: (() => void) | undefined;
+  const reachedPause = new Promise<void>((resolve) => {
+    paused = resolve;
+  });
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (input: string | URL | Request, init: RequestInit = {}) => {
+      const token = new Headers(init.headers).get('Authorization');
+      if (expired && token !== 'Bearer new')
+        return new Response(null, { status: 401 });
+      assert.equal(token, 'Bearer ' + validToken);
+      const response = await api.fetch(input, init);
+      if (init.method === 'PUT' && response.status === 308) expired = true;
+      return response;
+    },
+  );
+  const drive = new Drive(
+    'old',
+    () => {},
+    noWait,
+    () => {},
+    () => {
+      renewals++;
+      paused?.();
+      return new Promise<string>((resolve) => {
+        release = resolve;
+      });
+    },
+  );
+  const text = 'é'.repeat(400000);
+  const upload = drive.upload(text, { name: 'large.json' }, 'Test');
+  await reachedPause;
+  assert.equal(
+    api.uploadedBytes,
+    256 * 1024,
+    'first chunk retained during user authorization',
+  );
+  assert.equal(
+    api.requests.filter((request) => request.method === 'POST').length,
+    1,
+  );
+  validToken = 'new';
+  release!('new');
+  const id = await upload;
+  assert.equal(renewals, 1);
+  assert.equal(api.files.get(id)!.text, text);
+  assert.equal(
+    api.uploadedBytes,
+    new Blob([text]).size,
+    'acknowledged bytes are not reuploaded',
+  );
+  assert.equal(
+    api.requests.filter((request) => request.method === 'POST').length,
+    1,
+    'same upload session',
+  );
+});
+void test('repair renews expired access during block upload, cold image verification and candidate promotion without starting over', async (t) => {
+  const api = server();
+  let token = 'token-0',
+    renewals = 0;
+  const expired = new Set<string>();
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (input: string | URL | Request, init: RequestInit = {}) => {
+      const url = input instanceof Request ? input.url : input.toString();
+      const phase =
+        init.method === 'POST'
+          ? 'upload'
+          : init.method === 'PATCH'
+            ? 'promotion'
+            : url.includes('alt=media')
+              ? 'verification'
+              : '';
+      if (phase && !expired.has(phase)) {
+        expired.add(phase);
+        return new Response(null, { status: 401 });
+      }
+      assert.equal(
+        new Headers(init.headers).get('Authorization'),
+        'Bearer ' + token,
+      );
+      return api.fetch(input, init);
+    },
+  );
+  const drive = new Drive(
+    token,
+    () => {},
+    noWait,
+    () => {},
+    async () => {
+      token = 'token-' + ++renewals;
+      return token;
+    },
+  );
+  const library = illustratedLibrary();
+  const result = await replaceFromLocal(drive, library);
+  assert.equal(renewals, 3);
+  assert.deepEqual(await readRecovery(drive, result), library);
+  assert.equal(
+    api.requests.filter((request) => request.method === 'PATCH').length,
+    1,
+  );
+  assert.equal(
+    api.requests.filter((request) => request.method === 'DELETE').length,
+    0,
+  );
+  assert.equal(remoteHeads(await drive.list())[0].id, result.id);
+});
+void test('cancelled access renewal cannot publish an unverified repair', async (t) => {
+  const api = server();
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (input: string | URL | Request, init: RequestInit = {}) =>
+      init.method === 'POST'
+        ? new Response(null, { status: 401 })
+        : api.fetch(input, init),
+  );
+  const drive = new Drive(
+    'expired',
+    () => {},
+    noWait,
+    () => {},
+    async () => {
+      throw Error('User cancelled renewal');
+    },
+  );
+  await assert.rejects(
+    replaceFromLocal(drive, illustratedLibrary()),
+    /User cancelled renewal/,
+  );
+  assert.equal(
+    api.requests.filter(
+      (request) => request.method === 'PATCH' || request.method === 'DELETE',
+    ).length,
+    0,
+  );
+  assert.deepEqual(await drive.list(), []);
+});
+void test('concurrent expired requests share one renewal and another rejected token does not loop', async (t) => {
+  let renewals = 0,
+    release: (() => void) | undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async (_input: string | URL | Request, init: RequestInit = {}) =>
+      new Headers(init.headers).get('Authorization') === 'Bearer new'
+        ? Response.json({ ok: true })
+        : new Response(null, { status: 401 }),
+  );
+  const drive = new Drive(
+    'old',
+    () => {},
+    noWait,
+    () => {},
+    async () => {
+      renewals++;
+      await gate;
+      return 'new';
+    },
+  );
+  const first = drive.json('https://www.googleapis.com/first');
+  const second = drive.json('https://www.googleapis.com/second');
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  assert.equal(renewals, 1);
+  release!();
+  assert.deepEqual(await Promise.all([first, second]), [
+    { ok: true },
+    { ok: true },
+  ]);
+  let attempts = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    attempts++;
+    return new Response(null, { status: 401 });
+  });
+  const rejected = new Drive(
+    'old',
+    () => {},
+    noWait,
+    () => {},
+    async () => 'still-invalid',
+  );
+  await assert.rejects(
+    rejected.json('https://www.googleapis.com/invalid'),
+    /Anmeldung abgelaufen/,
+  );
+  assert.equal(attempts, 2);
+});
